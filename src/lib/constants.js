@@ -58,8 +58,9 @@ export const QUICK_AMOUNTS = [100, 250, 500, -100, -250];
 export const DEFAULT_SETTINGS = {
   currency: '$',
   theme: 'dark',
-  weekStartsOn: 0, // 0 = Sunday
-  firstLaunchCompleted: false
+  weekStartsOn: 0,
+  firstLaunchCompleted: false,
+  startingBalance: 0
 };
 
 // Storage keys
