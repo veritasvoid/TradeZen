@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Edit, Trash2, ZoomIn } from 'lucide-react';
 import { format } from 'date-fns';
 import { Modal } from '@/components/shared/Modal';
 import { Button } from '@/components/shared/Button';
 import { useDeleteTrade } from '@/hooks/useTrades';
 import { useToast } from '@/components/shared/Toast';
+import { TradeForm } from '@/components/trade/TradeForm';
 import { formatCurrency } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { googleAPI } from '@/lib/googleAPI';
 
-export const DayPanel = ({ date, trades, onClose, onAddTrade }) => {
+export const DayPanel = ({ date, trades, onClose, onAddTrade, tags = [] }) => {
   const { showToast } = useToast();
   const deleteTrade = useDeleteTrade();
   const currency = useSettingsStore(state => state.settings.currency);
+  const [editingTrade, setEditingTrade] = useState(null);
   
   const dailyTotal = trades.reduce((sum, t) => sum + t.amount, 0);
   
@@ -22,62 +24,88 @@ export const DayPanel = ({ date, trades, onClose, onAddTrade }) => {
     try {
       await deleteTrade.mutateAsync(tradeId);
       showToast('Trade deleted', 'success');
+      
+      // Close panel if no trades left
+      if (trades.length === 1) {
+        onClose();
+      }
     } catch (error) {
       showToast('Failed to delete trade', 'error');
     }
   };
 
+  const handleEdit = (trade) => {
+    setEditingTrade(trade);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingTrade(null);
+  };
+
   return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title={
-        <div>
-          <div className="text-xl font-bold">
-            {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+    <>
+      <Modal
+        isOpen={true}
+        onClose={onClose}
+        title={
+          <div>
+            <div className="text-xl font-bold">
+              {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+            </div>
+            <div className={`text-2xl font-bold mt-1 ${dailyTotal >= 0 ? 'text-profit' : 'text-loss'}`}>
+              {formatCurrency(dailyTotal, currency)}
+            </div>
+            <div className="text-sm text-text-secondary mt-1">
+              {trades.length} trade{trades.length !== 1 ? 's' : ''}
+            </div>
           </div>
-          <div className={`text-2xl font-bold mt-1 ${dailyTotal >= 0 ? 'text-profit' : 'text-loss'}`}>
-            {formatCurrency(dailyTotal, currency)}
-          </div>
-          <div className="text-sm text-text-secondary mt-1">
-            {trades.length} trade{trades.length !== 1 ? 's' : ''}
-          </div>
+        }
+      >
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          {trades.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-text-secondary mb-4">No trades on this day</p>
+              <Button onClick={onAddTrade}>Add Trade</Button>
+            </div>
+          ) : (
+            <>
+              {trades.map(trade => (
+                <TradeCard
+                  key={trade.tradeId}
+                  trade={trade}
+                  currency={currency}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                />
+              ))}
+              
+              <Button
+                onClick={onAddTrade}
+                variant="secondary"
+                className="w-full"
+              >
+                + Add Another Trade
+              </Button>
+            </>
+          )}
         </div>
-      }
-    >
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-        {trades.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-text-secondary mb-4">No trades on this day</p>
-            <Button onClick={onAddTrade}>Add Trade</Button>
-          </div>
-        ) : (
-          <>
-            {trades.map(trade => (
-              <TradeCard
-                key={trade.tradeId}
-                trade={trade}
-                currency={currency}
-                onDelete={handleDelete}
-              />
-            ))}
-            
-            <Button
-              onClick={onAddTrade}
-              variant="secondary"
-              className="w-full"
-            >
-              + Add Another Trade
-            </Button>
-          </>
-        )}
-      </div>
-    </Modal>
+      </Modal>
+
+      {/* Edit Trade Form */}
+      {editingTrade && (
+        <TradeForm
+          trade={editingTrade}
+          defaultDate={date}
+          tags={tags}
+          onClose={handleCloseEdit}
+        />
+      )}
+    </>
   );
 };
 
-const TradeCard = ({ trade, currency, onDelete }) => {
-  const [showImage, setShowImage] = React.useState(false);
+const TradeCard = ({ trade, currency, onDelete, onEdit }) => {
+  const [showImage, setShowImage] = useState(false);
   
   return (
     <>
@@ -125,6 +153,7 @@ const TradeCard = ({ trade, currency, onDelete }) => {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => onEdit(trade)}
             className="flex-1 text-text-secondary hover:text-accent"
           >
             <Edit size={16} className="mr-1" />
