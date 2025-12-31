@@ -8,6 +8,7 @@ import { useToast } from '@/components/shared/Toast';
 import { generateId } from '@/lib/utils';
 import { QUICK_AMOUNTS } from '@/lib/constants';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { googleAPI } from '@/lib/googleAPI';
 
 export const TradeForm = ({ defaultDate = null, trade = null, tags = [], onClose }) => {
   const { showToast } = useToast();
