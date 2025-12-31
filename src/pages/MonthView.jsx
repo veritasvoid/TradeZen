@@ -93,38 +93,39 @@ const MonthView = () => {
     <>
       <Header title="Calendar" />
       
-      <div className="p-4 pb-20 max-w-7xl mx-auto space-y-4">
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between">
+      {/* FIXED: Container now uses flex with full height */}
+      <div className="flex flex-col h-[calc(100vh-80px)] p-6 pb-24 max-w-[1600px] mx-auto">
+        {/* Month Navigation - Compact */}
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
+            className="p-3 hover:bg-surface-hover rounded-xl transition-colors"
           >
             <ChevronLeft size={24} />
           </button>
           
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-3xl font-bold">
             {format(currentDate, 'MMMM yyyy')}
           </h2>
           
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode(viewMode === 'calendar' ? 'list' : 'calendar')}
-              className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
+              className="p-3 hover:bg-surface-hover rounded-xl transition-colors"
             >
               {viewMode === 'calendar' ? <List size={20} /> : <LayoutGrid size={20} />}
             </button>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
+              className="p-3 hover:bg-surface-hover rounded-xl transition-colors"
             >
               <ChevronRight size={24} />
             </button>
           </div>
         </div>
 
-        {/* Month Stats */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* Month Stats - Compact */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
           <StatCard
             label="P&L"
             value={formatCompactCurrency(monthStats.totalPL, currency)}
@@ -145,26 +146,26 @@ const MonthView = () => {
           />
         </div>
 
-        {/* Calendar or List View */}
+        {/* Calendar - NOW FILLS REMAINING SPACE */}
         {viewMode === 'calendar' ? (
-          <div className="card">
-            {/* Day Headers */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
+          <div className="card flex-1 flex flex-col">
+            {/* Day Headers - Compact */}
+            <div className="grid grid-cols-7 gap-3 mb-3">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-sm font-medium text-text-secondary py-2">
+                <div key={day} className="text-center text-sm font-bold text-text-secondary py-2 uppercase tracking-wide">
                   {day}
                 </div>
               ))}
             </div>
 
-            {/* Calendar Grid - FIXED: removed aspect-square, using min-h */}
-            <div className="grid grid-cols-7 gap-2">
+            {/* Calendar Grid - FILLS REMAINING HEIGHT */}
+            <div className="grid grid-cols-7 gap-3 flex-1">
               {/* Empty cells for offset */}
               {emptyDays.map((_, idx) => (
-                <div key={`empty-${idx}`} className="min-h-[80px]" />
+                <div key={`empty-${idx}`} />
               ))}
               
-              {/* Day cells */}
+              {/* Day cells - NOW MUCH LARGER */}
               {daysInMonth.map(day => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayPL = dailyPL[dateStr] || 0;
@@ -232,8 +233,8 @@ const StatCard = ({ label, value, color = 'default' }) => {
 
   return (
     <div className="card text-center">
-      <div className="text-text-tertiary text-xs mb-1">{label}</div>
-      <div className={`text-lg font-bold ${colorClasses[color]}`}>
+      <div className="text-text-tertiary text-xs mb-1 uppercase tracking-wide font-semibold">{label}</div>
+      <div className={`text-2xl font-black ${colorClasses[color]}`}>
         {value}
       </div>
     </div>
@@ -245,42 +246,45 @@ const DayCell = ({ date, pl, tradeCount, isWeekend, isToday, currency, onClick }
   
   if (isWeekend) {
     return (
-      <div className="min-h-[80px] bg-surface/50 rounded-lg p-2 flex flex-col items-center justify-center opacity-50">
-        <div className="text-sm text-text-tertiary">{dayNum}</div>
-        <div className="text-xs text-text-tertiary">🔒</div>
+      <div className="h-full bg-surface/30 rounded-xl p-3 flex flex-col items-center justify-center opacity-40 border border-border/30">
+        <div className="text-lg text-text-tertiary font-semibold">{dayNum}</div>
+        <div className="text-2xl mt-2">🔒</div>
       </div>
     );
   }
 
-  const bgClass = pl > 0 ? 'bg-profit/10' : pl < 0 ? 'bg-loss/10' : 'bg-surface';
-  const borderClass = isToday ? 'ring-2 ring-accent' : 'border border-border';
+  const bgClass = pl > 0 ? 'bg-profit/5 border-profit/30' : pl < 0 ? 'bg-loss/5 border-loss/30' : 'bg-surface border-border';
+  const borderClass = isToday ? 'ring-4 ring-accent shadow-lg shadow-accent/20' : '';
   
   return (
     <button
       onClick={onClick}
       className={`
-        min-h-[80px] ${bgClass} ${borderClass} rounded-lg p-2
-        hover:bg-surface-hover transition-all
+        h-full ${bgClass} ${borderClass} rounded-xl p-4 border-2
+        hover:bg-surface-hover hover:scale-105 transition-all duration-200
         flex flex-col items-center justify-center
-        relative
+        relative group
       `}
     >
-      {/* Date at top */}
-      <div className="absolute top-1 left-2 text-xs text-text-secondary">{dayNum}</div>
+      {/* Date - Smaller, top left */}
+      <div className="absolute top-2 left-3 text-sm text-text-secondary font-bold">{dayNum}</div>
       
-      {/* P&L in center - LARGER and CENTERED */}
+      {/* P&L - HUGE in center */}
       {tradeCount > 0 && (
-        <div className={`text-lg font-bold ${pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+        <div className={`text-3xl font-black ${pl >= 0 ? 'text-profit' : 'text-loss'} mt-2`}>
           {formatCompactCurrency(pl, currency)}
         </div>
       )}
       
-      {/* Trade count badge at bottom right */}
+      {/* Trade count badge - bottom right */}
       {tradeCount > 0 && (
-        <div className="absolute bottom-1 right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-accent text-white text-xs flex items-center justify-center">
+        <div className="absolute bottom-2 right-2 min-w-[28px] h-7 px-2 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold flex items-center justify-center shadow-lg">
           {tradeCount}
         </div>
       )}
+      
+      {/* Hover effect */}
+      <div className="absolute inset-0 bg-accent/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
     </button>
   );
 };
@@ -290,14 +294,14 @@ const ListView = ({ trades, groupedTrades, currency, onDayClick }) => {
 
   if (sortedDates.length === 0) {
     return (
-      <div className="card text-center py-12">
-        <p className="text-text-secondary">No trades this month</p>
+      <div className="card text-center py-12 flex-1 flex items-center justify-center">
+        <p className="text-text-secondary text-xl">No trades this month</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 flex-1 overflow-y-auto">
       {sortedDates.map(dateStr => {
         const dayTrades = groupedTrades[dateStr];
         const dayPL = dayTrades.reduce((sum, t) => sum + t.amount, 0);
@@ -307,17 +311,17 @@ const ListView = ({ trades, groupedTrades, currency, onDayClick }) => {
           <button
             key={dateStr}
             onClick={() => onDayClick(date)}
-            className="card w-full text-left hover:bg-surface-hover transition-colors"
+            className="card w-full text-left hover:bg-surface-hover transition-all hover:scale-[1.02]"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="font-medium">
+              <div className="font-bold text-lg">
                 {format(date, 'EEEE, MMMM d')}
               </div>
-              <div className={`text-lg font-bold ${dayPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+              <div className={`text-2xl font-black ${dayPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {formatCompactCurrency(dayPL, currency)}
               </div>
             </div>
-            <div className="text-sm text-text-secondary">
+            <div className="text-sm text-text-secondary font-semibold">
               {dayTrades.length} trade{dayTrades.length !== 1 ? 's' : ''}
             </div>
           </button>
