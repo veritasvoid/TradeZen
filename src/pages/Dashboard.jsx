@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrades } from '@/hooks/useTrades';
-import { Header } from '@/components/layout/Header';
 import { Loading } from '@/components/shared/Loading';
 import { calculateYearlyStats, formatCompactCurrency } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -33,105 +32,97 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <>
-        <Header title="TradeZen" />
-        <div className="p-4">
-          <Loading type="skeleton-grid" />
-        </div>
-      </>
+      <div className="p-4">
+        <Loading type="skeleton-grid" />
+      </div>
     );
   }
 
   return (
-    <>
-      <Header title="TradeZen" />
-      
-      <div className="p-4 max-w-7xl mx-auto space-y-6">
-        {/* Year Overview */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4">{currentYear} Performance</h2>
-          
-          {/* Chart */}
-          <div className="card mb-4 p-6">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData}>
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#a3a3a3"
-                  fontSize={12}
-                />
-                <Bar 
-                  dataKey="pl" 
-                  radius={[8, 8, 0, 0]}
-                  onClick={(data) => navigate(`/month/${currentYear}/${data.monthIndex}`)}
-                  cursor="pointer"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={index}
-                      fill={entry.pl >= 0 ? '#10b981' : '#ef4444'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard 
-              label="Total P&L" 
-              value={formatCompactCurrency(totalPL, currency)}
-              color={totalPL >= 0 ? 'profit' : 'loss'}
-            />
-            <StatCard 
-              label="Trades" 
-              value={totalTrades}
-            />
-            <StatCard 
-              label="Win Rate" 
-              value={`${overallWinRate}%`}
-              color={overallWinRate >= 50 ? 'profit' : 'loss'}
-            />
-            <StatCard 
-              label="W/L" 
-              value={`${totalWins}/${totalLosses}`}
-            />
-          </div>
-        </div>
-
-        {/* Monthly Tiles */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Monthly Breakdown</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {yearlyStats.map((monthData) => (
-              <MonthTile
-                key={monthData.month}
-                month={monthNames[monthData.month]}
-                stats={monthData}
-                onClick={() => navigate(`/month/${currentYear}/${monthData.month}`)}
-                currency={currency}
+    <div className="p-4 max-w-7xl mx-auto space-y-6">
+      {/* Year Overview */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">{currentYear} Performance</h2>
+        
+        {/* Chart */}
+        <div className="card mb-4 p-6">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData}>
+              <XAxis 
+                dataKey="month" 
+                stroke="#a3a3a3"
+                fontSize={12}
               />
-            ))}
-          </div>
+              <Bar 
+                dataKey="pl" 
+                radius={[8, 8, 0, 0]}
+                onClick={(data) => navigate(`/month/${currentYear}/${data.monthIndex}`)}
+                cursor="pointer"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
+                    key={index}
+                    fill={entry.pl >= 0 ? '#10b981' : '#ef4444'}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Empty State */}
-        {totalTrades === 0 && (
-          <div className="card text-center py-12">
-            <p className="text-text-secondary mb-4">
-              No trades yet. Start logging your trades!
-            </p>
-            <button
-              onClick={() => navigate('/month')}
-              className="text-accent hover:underline"
-            >
-              Go to Calendar →
-            </button>
-          </div>
-        )}
+        {/* Stats Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard 
+            label="Total P&L" 
+            value={formatCompactCurrency(totalPL, currency)}
+            color={totalPL >= 0 ? 'profit' : 'loss'}
+          />
+          <StatCard 
+            label="Trades" 
+            value={totalTrades}
+          />
+          <StatCard 
+            label="Win Rate" 
+            value={`${overallWinRate}%`}
+            color={overallWinRate >= 50 ? 'profit' : 'loss'}
+          />
+          <StatCard 
+            label="W/L" 
+            value={`${totalWins}/${totalLosses}`}
+          />
+        </div>
       </div>
-    </>
+
+      {/* Monthly Tiles */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Monthly Breakdown</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {yearlyStats.map((monthData) => (
+            <MonthTile
+              key={monthData.month}
+              month={monthNames[monthData.month]}
+              stats={monthData}
+              onClick={() => navigate(`/month/${currentYear}/${monthData.month}`)}
+              currency={currency}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {totalTrades === 0 && (
+        <div className="card text-center py-12">
+          <div className="text-4xl mb-4">📊</div>
+          <h3 className="text-xl font-semibold mb-2">No trades yet</h3>
+          <p className="text-text-secondary mb-4">
+            Start logging your trades to track your performance
+          </p>
+          <p className="text-sm text-text-tertiary">
+            Use the navigation above to add tags and start tracking
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 
