@@ -153,12 +153,9 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
   const radius = 16;
   const circumference = 2 * Math.PI * radius;
   
-  // Win arc (green)
-  const winStrokeDasharray = `${(winRate / 100) * circumference} ${circumference}`;
-  
-  // Loss arc (red) - starts where win arc ends
-  const lossStrokeDasharray = `${(lossRate / 100) * circumference} ${circumference}`;
-  const lossStrokeDashoffset = -((winRate / 100) * circumference);
+  // Calculate percentages
+  const winPercent = winRate / 100;
+  const lossPercent = (100 - winRate) / 100;
 
   return (
     <div
@@ -172,11 +169,11 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
         {formatCompactCurrency(stats.totalPL, currency)}
       </div>
       
-      {/* Donut Chart - FIXED to show red portion */}
+      {/* Donut Chart - PROPERLY FIXED */}
       <div className="flex items-center justify-center mb-2">
         <div className="relative w-16 h-16">
           <svg viewBox="0 0 36 36" className="transform -rotate-90">
-            {/* Background circle (gray) */}
+            {/* Background gray circle */}
             <circle
               cx="18"
               cy="18"
@@ -187,21 +184,7 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
               opacity="0.2"
             />
             
-            {/* Loss portion (red) - shows when win rate < 100% */}
-            {lossRate > 0 && (
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke="#ef4444"
-                strokeWidth="4"
-                strokeDasharray={lossStrokeDasharray}
-                strokeDashoffset={lossStrokeDashoffset}
-              />
-            )}
-            
-            {/* Win portion (green) */}
+            {/* Win portion (green) - starts at top */}
             {winRate > 0 && (
               <circle
                 cx="18"
@@ -210,7 +193,22 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
                 fill="none"
                 stroke="#10b981"
                 strokeWidth="4"
-                strokeDasharray={winStrokeDasharray}
+                strokeDasharray={`${winPercent * circumference} ${circumference}`}
+                strokeDashoffset="0"
+              />
+            )}
+            
+            {/* Loss portion (red) - continues from where green ends */}
+            {winRate < 100 && (
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="4"
+                strokeDasharray={`${lossPercent * circumference} ${circumference}`}
+                strokeDashoffset={`${-winPercent * circumference}`}
               />
             )}
           </svg>
