@@ -1,14 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrades } from '@/hooks/useTrades';
+import { useTags } from '@/hooks/useTags';
 import { Loading } from '@/components/shared/Loading';
 import { calculateYearlyStats, formatCompactCurrency } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { BarChart, Bar, XAxis, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data: trades = [], isLoading } = useTrades();
+  const { data: tags = [], isLoading: tagsLoading } = useTags();
   const currency = useSettingsStore(state => state.settings.currency);
   
   const currentYear = new Date().getFullYear();
@@ -30,7 +33,10 @@ const Dashboard = () => {
     monthIndex: m.month
   }));
 
-  if (isLoading) {
+  // Calculate tag performance
+  const tagPerformance = calculateTagPerformance(trades, tags);
+
+  if (isLoading || tagsLoading) {
     return (
       <div className="p-4">
         <Loading type="skeleton-grid" />
@@ -40,60 +46,93 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="p-4 pb-20 max-w-7xl mx-auto space-y-6">
+      <div className="p-6 pb-20 max-w-[1600px] mx-auto space-y-6">
         {/* Year Overview */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">{currentYear} Overview</h2>
+          <h2 className="text-2xl font-bold mb-6">{currentYear} Overview</h2>
           
-          {/* Chart */}
-          <div className="card mb-4 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#9ca3af', fontSize: 12 }}
-                />
-                <Bar dataKey="pl" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={index}
-                      fill={entry.pl >= 0 ? '#10b981' : '#ef4444'}
+          {/* Chart + Stats Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* CHART - Takes 3 columns, TALLER */}
+            <div className="lg:col-span-3 card h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 40, right: 20, left: 20, bottom: 20 }}>
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#9ca3af', fontSize: 13, fontWeight: 600 }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                    tickFormatter={(value) => `${currency}${value}`}
+                  />
+                  <Bar dataKey="pl" radius={[8, 8, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell 
+                        key={index}
+                        fill={entry.pl >= 0 ? '#10b981' : '#ef4444'}
+                      />
+                    ))}
+                    {/* P&L VALUES ON TOP OF BARS */}
+                    <LabelList 
+                      dataKey="pl" 
+                      position="top" 
+                      formatter={(value) => `${currency}${value}`}
+                      style={{ 
+                        fill: '#e5e7eb', 
+                        fontSize: 12, 
+                        fontWeight: 700 
+                      }}
                     />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard 
-              label="Total P&L" 
-              value={formatCompactCurrency(totalPL, currency)}
-              color={totalPL >= 0 ? 'profit' : 'loss'}
-            />
-            <StatCard 
-              label="Trades" 
-              value={totalTrades}
-            />
-            <StatCard 
-              label="Win Rate" 
-              value={`${overallWinRate}%`}
-              color={overallWinRate >= 50 ? 'profit' : 'loss'}
-            />
-            <StatCard 
-              label="W/L" 
-              value={`${totalWins}/${totalLosses}`}
-            />
+            {/* STATS - Vertical stack on right side */}
+            <div className="lg:col-span-1 space-y-3">
+              <StatCard 
+                label="Total P&L" 
+                value={formatCompactCurrency(totalPL, currency)}
+                color={totalPL >= 0 ? 'profit' : 'loss'}
+                large
+              />
+              <StatCard 
+                label="Trades" 
+                value={totalTrades}
+              />
+              <StatCard 
+                label="Win Rate" 
+                value={`${overallWinRate}%`}
+                color={overallWinRate >= 50 ? 'profit' : 'loss'}
+              />
+              <StatCard 
+                label="W/L" 
+                value={`${totalWins}/${totalLosses}`}
+              />
+            </div>
           </div>
         </div>
 
+        {/* Tag Performance Analytics */}
+        {tagPerformance.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Strategy Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {tagPerformance.map(tag => (
+                <TagPerformanceCard key={tag.tagId} tag={tag} currency={currency} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Monthly Tiles */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Monthly Breakdown</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <h2 className="text-2xl font-bold mb-6">Monthly Breakdown</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {yearlyStats.map((monthData) => (
               <MonthTile
                 key={monthData.month}
@@ -119,7 +158,42 @@ const Dashboard = () => {
   );
 };
 
-const StatCard = ({ label, value, color = 'default' }) => {
+// Calculate performance by tag
+const calculateTagPerformance = (trades, tags) => {
+  const tagStats = {};
+  
+  trades.forEach(trade => {
+    const tagId = trade.tagId || 'none';
+    
+    if (!tagStats[tagId]) {
+      tagStats[tagId] = {
+        tagId,
+        tagName: trade.tagName || 'No Tag',
+        tagColor: trade.tagColor || '#6b7280',
+        tagEmoji: trade.tagEmoji || '—',
+        totalPL: 0,
+        trades: 0,
+        wins: 0,
+        losses: 0
+      };
+    }
+    
+    tagStats[tagId].totalPL += trade.amount;
+    tagStats[tagId].trades += 1;
+    if (trade.amount > 0) tagStats[tagId].wins += 1;
+    if (trade.amount < 0) tagStats[tagId].losses += 1;
+  });
+  
+  return Object.values(tagStats)
+    .map(tag => ({
+      ...tag,
+      winRate: tag.trades > 0 ? Math.round((tag.wins / tag.trades) * 100) : 0,
+      avgPL: tag.trades > 0 ? tag.totalPL / tag.trades : 0
+    }))
+    .sort((a, b) => b.totalPL - a.totalPL);
+};
+
+const StatCard = ({ label, value, color = 'default', large = false }) => {
   const colorClasses = {
     profit: 'text-profit',
     loss: 'text-loss',
@@ -127,10 +201,55 @@ const StatCard = ({ label, value, color = 'default' }) => {
   };
 
   return (
-    <div className="card">
-      <div className="text-text-secondary text-sm mb-1">{label}</div>
-      <div className={`text-2xl font-bold ${colorClasses[color]}`}>
+    <div className="card text-center">
+      <div className="text-text-tertiary text-xs mb-1 uppercase tracking-wide font-semibold">{label}</div>
+      <div className={`${large ? 'text-3xl' : 'text-2xl'} font-black ${colorClasses[color]}`}>
         {value}
+      </div>
+    </div>
+  );
+};
+
+const TagPerformanceCard = ({ tag, currency }) => {
+  const isPositive = tag.totalPL >= 0;
+  
+  return (
+    <div className="card hover:bg-surface-hover transition-all">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{tag.tagEmoji}</span>
+          <div>
+            <div className="font-bold text-sm" style={{ color: tag.tagColor }}>
+              {tag.tagName}
+            </div>
+            <div className="text-xs text-text-tertiary">{tag.trades} trades</div>
+          </div>
+        </div>
+        {isPositive ? (
+          <TrendingUp size={20} className="text-profit" />
+        ) : (
+          <TrendingDown size={20} className="text-loss" />
+        )}
+      </div>
+      
+      <div className={`text-2xl font-black mb-2 ${isPositive ? 'text-profit' : 'text-loss'}`}>
+        {formatCompactCurrency(tag.totalPL, currency)}
+      </div>
+      
+      <div className="flex items-center justify-between text-xs">
+        <div>
+          <span className="text-text-tertiary">Win Rate: </span>
+          <span className={`font-bold ${tag.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
+            {tag.winRate}%
+          </span>
+        </div>
+        <div className="text-text-tertiary">
+          {tag.wins}W/{tag.losses}L
+        </div>
+      </div>
+      
+      <div className="mt-2 text-xs text-text-tertiary">
+        Avg: <span className="font-semibold">{formatCompactCurrency(tag.avgPL, currency)}</span>
       </div>
     </div>
   );
@@ -142,12 +261,8 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
     : 0;
   
   const lossRate = 100 - winRate;
-
-  // Calculate circle strokes for donut chart
   const radius = 16;
   const circumference = 2 * Math.PI * radius;
-  
-  // Calculate percentages
   const winPercent = winRate / 100;
   const lossPercent = (100 - winRate) / 100;
 
@@ -156,18 +271,17 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
       onClick={onClick}
       className="card cursor-pointer hover:bg-surface-hover transition-all hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="text-text-secondary text-sm mb-2 uppercase font-medium">
+      <div className="text-text-secondary text-xs mb-2 uppercase font-bold tracking-wide">
         {month}
       </div>
-      <div className={`text-2xl font-bold mb-3 ${stats.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+      <div className={`text-xl font-black mb-3 ${stats.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
         {formatCompactCurrency(stats.totalPL, currency)}
       </div>
       
-      {/* Donut Chart - PROPERLY FIXED */}
+      {/* Donut Chart */}
       <div className="flex items-center justify-center mb-2">
-        <div className="relative w-16 h-16">
+        <div className="relative w-14 h-14">
           <svg viewBox="0 0 36 36" className="transform -rotate-90">
-            {/* Background gray circle */}
             <circle
               cx="18"
               cy="18"
@@ -178,7 +292,6 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
               opacity="0.2"
             />
             
-            {/* Win portion (green) - starts at top */}
             {winRate > 0 && (
               <circle
                 cx="18"
@@ -192,7 +305,6 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
               />
             )}
             
-            {/* Loss portion (red) - continues from where green ends */}
             {winRate < 100 && (
               <circle
                 cx="18"
@@ -207,7 +319,7 @@ const MonthTile = ({ month, stats, onClick, currency }) => {
             )}
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm font-semibold">{winRate}%</span>
+            <span className="text-xs font-bold">{winRate}%</span>
           </div>
         </div>
       </div>
