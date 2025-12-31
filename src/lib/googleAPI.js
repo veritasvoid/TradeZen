@@ -118,34 +118,65 @@ class GoogleAPIClient {
       }
     }
 
-    // Create new spreadsheet
+    // Create new spreadsheet with all sheets at once
     const response = await window.gapi.client.sheets.spreadsheets.create({
       properties: {
         title: SHEET_NAME
       },
       sheets: [
-        { properties: { title: SHEETS.TRADES } },
-        { properties: { title: SHEETS.TAGS } },
-        { properties: { title: SHEETS.SETTINGS } }
+        { 
+          properties: { 
+            title: SHEETS.TRADES,
+            gridProperties: {
+              rowCount: 1000,
+              columnCount: 12
+            }
+          } 
+        },
+        { 
+          properties: { 
+            title: SHEETS.TAGS,
+            gridProperties: {
+              rowCount: 1000,
+              columnCount: 5
+            }
+          } 
+        },
+        { 
+          properties: { 
+            title: SHEETS.SETTINGS,
+            gridProperties: {
+              rowCount: 1000,
+              columnCount: 2
+            }
+          } 
+        }
       ]
     });
 
     const sheetId = response.result.spreadsheetId;
+    const sheets = response.result.sheets;
+    
     localStorage.setItem(STORAGE_KEYS.SHEET_ID, sheetId);
 
-    // Initialize with headers
-    await this.initializeSheets(sheetId);
+    // Initialize with headers using the actual sheet IDs
+    await this.initializeSheets(sheetId, sheets);
 
     return sheetId;
   }
 
   // Initialize sheets with headers
-  async initializeSheets(sheetId) {
+  async initializeSheets(sheetId, sheets) {
+    // Find the actual sheet IDs
+    const tradesSheetId = sheets.find(s => s.properties.title === SHEETS.TRADES).properties.sheetId;
+    const tagsSheetId = sheets.find(s => s.properties.title === SHEETS.TAGS).properties.sheetId;
+    const settingsSheetId = sheets.find(s => s.properties.title === SHEETS.SETTINGS).properties.sheetId;
+
     const requests = [
       {
         updateCells: {
           range: {
-            sheetId: 0, // Trades sheet
+            sheetId: tradesSheetId,
             startRowIndex: 0,
             endRowIndex: 1
           },
@@ -171,7 +202,7 @@ class GoogleAPIClient {
       {
         updateCells: {
           range: {
-            sheetId: 1, // Tags sheet
+            sheetId: tagsSheetId,
             startRowIndex: 0,
             endRowIndex: 1
           },
@@ -190,7 +221,7 @@ class GoogleAPIClient {
       {
         updateCells: {
           range: {
-            sheetId: 2, // Settings sheet
+            sheetId: settingsSheetId,
             startRowIndex: 0,
             endRowIndex: 1
           },
