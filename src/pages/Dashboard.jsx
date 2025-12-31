@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrades } from '@/hooks/useTrades';
-import { Header } from '@/components/layout/Header';
 import { Loading } from '@/components/shared/Loading';
 import { calculateYearlyStats, formatCompactCurrency } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -33,19 +32,14 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <>
-        <Header title="TradeZen" />
-        <div className="p-4">
-          <Loading type="skeleton-grid" />
-        </div>
-      </>
+      <div className="p-4">
+        <Loading type="skeleton-grid" />
+      </div>
     );
   }
 
   return (
     <>
-      <Header title="TradeZen" />
-      
       <div className="p-4 pb-20 max-w-7xl mx-auto space-y-6">
         {/* Year Overview */}
         <div>
