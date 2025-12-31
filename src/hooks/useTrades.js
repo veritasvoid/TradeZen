@@ -66,7 +66,9 @@ const addTrade = async (tradeData) => {
       useWebWorker: true
     });
     
-    const filename = `${tradeData.tradeId}_${tradeData.date}.jpg`;
+    // Better filename: uuid_date_time.jpg
+    const timeFormatted = tradeData.time.replace(':', '-');
+    const filename = `${tradeData.tradeId}_${tradeData.date}_${timeFormatted}.jpg`;
     driveImageId = await googleAPI.uploadImage(compressed, filename);
   }
 
@@ -138,7 +140,9 @@ const updateTrade = async ({ tradeId, updates }) => {
       useWebWorker: true
     });
     
-    const filename = `${tradeId}_${updates.date || trade.date}.jpg`;
+    const date = updates.date || trade.date;
+    const time = (updates.time || trade.time).replace(':', '-');
+    const filename = `${tradeId}_${date}_${time}.jpg`;
     driveImageId = await googleAPI.uploadImage(compressed, filename);
   }
 
@@ -210,8 +214,8 @@ export const useTrades = () => {
   return useQuery({
     queryKey: ['trades'],
     queryFn: fetchTrades,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 30 * 60 * 1000 // 30 minutes
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 30 * 60 * 1000
   });
 };
 
@@ -229,27 +233,19 @@ export const useAddTrade = () => {
   return useMutation({
     mutationFn: addTrade,
     onMutate: async (newTrade) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['trades'] });
-      
-      // Snapshot previous value
       const previousTrades = queryClient.getQueryData(['trades']);
-      
-      // Optimistically update
       if (previousTrades) {
         queryClient.setQueryData(['trades'], old => [...(old || []), newTrade]);
       }
-      
       return { previousTrades };
     },
     onError: (err, newTrade, context) => {
-      // Rollback on error
       if (context?.previousTrades) {
         queryClient.setQueryData(['trades'], context.previousTrades);
       }
     },
     onSettled: () => {
-      // Refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['trades'] });
     }
   });
@@ -273,15 +269,12 @@ export const useDeleteTrade = () => {
     mutationFn: deleteTrade,
     onMutate: async (tradeId) => {
       await queryClient.cancelQueries({ queryKey: ['trades'] });
-      
       const previousTrades = queryClient.getQueryData(['trades']);
-      
       if (previousTrades) {
         queryClient.setQueryData(['trades'], old => 
           (old || []).filter(t => t.tradeId !== tradeId)
         );
       }
-      
       return { previousTrades };
     },
     onError: (err, tradeId, context) => {
