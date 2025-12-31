@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react';
-import { Header } from '@/components/layout/Header';
 import { FAB } from '@/components/shared/FAB';
 import { Loading } from '@/components/shared/Loading';
 import { DayPanel } from '@/components/month/DayPanel';
@@ -80,19 +79,14 @@ const MonthView = () => {
 
   if (tradesLoading || tagsLoading) {
     return (
-      <>
-        <Header title="Calendar" />
-        <div className="p-4">
-          <Loading type="skeleton-grid" />
-        </div>
-      </>
+      <div className="p-4">
+        <Loading type="skeleton-grid" />
+      </div>
     );
   }
 
   return (
     <>
-      <Header title="Calendar" />
-      
       {/* FIXED: Container now uses flex with full height */}
       <div className="flex flex-col h-[calc(100vh-80px)] p-6 pb-24 max-w-[1600px] mx-auto">
         {/* Month Navigation - Compact */}
