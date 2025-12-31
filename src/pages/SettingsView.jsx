@@ -43,6 +43,20 @@ const SettingsView = () => {
             ))}
           </select>
         </SettingRow>
+        
+        <SettingRow label="Starting Balance">
+          <div className="flex items-center gap-2">
+            <span className="text-text-secondary font-bold">{settings.currency}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={settings.startingBalance || 0}
+              onChange={(e) => updateSettings({ startingBalance: parseFloat(e.target.value) || 0 })}
+              className="input py-2 w-32 text-right"
+              placeholder="0.00"
+            />
+          </div>
+        </SettingRow>
       </Section>
 
       {/* Data */}
