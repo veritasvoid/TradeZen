@@ -9,13 +9,14 @@ import {
   SHEETS
 } from './constants';
 
-// Google API Client
+// Google API Client with auto token refresh
 class GoogleAPIClient {
   constructor() {
     this.accessToken = null;
     this.tokenClient = null;
     this.gapiInited = false;
     this.gisInited = false;
+    this.refreshTimer = null;
   }
 
   // Initialize Google API
@@ -58,6 +59,61 @@ class GoogleAPIClient {
     });
   }
 
+  // Refresh token automatically
+  async refreshToken() {
+    return new Promise((resolve, reject) => {
+      try {
+        this.tokenClient.callback = async (resp) => {
+          if (resp.error !== undefined) {
+            console.error('Token refresh failed:', resp.error);
+            // Token refresh failed, user needs to sign in again
+            this.signOut();
+            window.location.reload();
+            reject(resp);
+            return;
+          }
+          
+          this.accessToken = resp.access_token;
+          window.gapi.client.setToken({ access_token: this.accessToken });
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, this.accessToken);
+          
+          console.log('✅ Token refreshed successfully');
+          
+          // Schedule next refresh in 50 minutes (before 1 hour expiry)
+          this.scheduleTokenRefresh();
+          
+          resolve(resp);
+        };
+
+        // Request new token silently (no popup)
+        this.tokenClient.requestAccessToken({ prompt: '' });
+      } catch (err) {
+        console.error('Token refresh error:', err);
+        reject(err);
+      }
+    });
+  }
+
+  // Schedule automatic token refresh
+  scheduleTokenRefresh() {
+    // Clear existing timer
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
+    
+    // Refresh token every 50 minutes (tokens expire at 60 minutes)
+    const refreshInterval = 50 * 60 * 1000; // 50 minutes in milliseconds
+    
+    this.refreshTimer = setTimeout(() => {
+      console.log('🔄 Auto-refreshing token...');
+      this.refreshToken().catch(err => {
+        console.error('Auto-refresh failed:', err);
+      });
+    }, refreshInterval);
+    
+    console.log('⏰ Token refresh scheduled for 50 minutes from now');
+  }
+
   // Sign in with Google
   async signIn() {
     return new Promise((resolve, reject) => {
@@ -70,6 +126,10 @@ class GoogleAPIClient {
           this.accessToken = resp.access_token;
           window.gapi.client.setToken({ access_token: this.accessToken });
           localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, this.accessToken);
+          
+          // Start auto-refresh cycle
+          this.scheduleTokenRefresh();
+          
           resolve(resp);
         };
 
@@ -78,6 +138,10 @@ class GoogleAPIClient {
         if (savedToken) {
           this.accessToken = savedToken;
           window.gapi.client.setToken({ access_token: savedToken });
+          
+          // Start auto-refresh for existing token
+          this.scheduleTokenRefresh();
+          
           resolve({ access_token: savedToken });
         } else {
           this.tokenClient.requestAccessToken({ prompt: 'consent' });
@@ -90,6 +154,12 @@ class GoogleAPIClient {
 
   // Sign out
   signOut() {
+    // Clear refresh timer
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    
     this.accessToken = null;
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     // DON'T clear sheet ID and folder ID on sign out!
