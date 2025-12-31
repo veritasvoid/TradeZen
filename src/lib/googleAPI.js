@@ -92,8 +92,8 @@ class GoogleAPIClient {
   signOut() {
     this.accessToken = null;
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.SHEET_ID);
-    localStorage.removeItem(STORAGE_KEYS.DRIVE_FOLDER_ID);
+    // DON'T clear sheet ID and folder ID on sign out!
+    // Keep them so we reuse same sheet
     window.gapi.client.setToken(null);
   }
 
@@ -102,23 +102,42 @@ class GoogleAPIClient {
     return !!this.accessToken || !!localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 
-  // Get or create spreadsheet
+  // Get or create spreadsheet - FIXED to search Drive first
   async getOrCreateSpreadsheet() {
+    // 1. Check localStorage first
     const savedSheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
     
     if (savedSheetId) {
-      // Verify sheet still exists
       try {
         await window.gapi.client.sheets.spreadsheets.get({
           spreadsheetId: savedSheetId
         });
         return savedSheetId;
       } catch (err) {
-        console.log('Saved sheet not found, creating new one');
+        console.log('Saved sheet not accessible, searching Drive...');
       }
     }
 
-    // Create new spreadsheet with all sheets at once
+    // 2. Search Google Drive for existing TradeZen sheet
+    try {
+      const response = await window.gapi.client.drive.files.list({
+        q: `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+        fields: 'files(id, name)',
+        orderBy: 'createdTime desc'
+      });
+
+      if (response.result.files && response.result.files.length > 0) {
+        const existingSheetId = response.result.files[0].id;
+        console.log('Found existing TradeZen sheet, reusing it');
+        localStorage.setItem(STORAGE_KEYS.SHEET_ID, existingSheetId);
+        return existingSheetId;
+      }
+    } catch (err) {
+      console.log('Could not search Drive, creating new sheet');
+    }
+
+    // 3. Create new spreadsheet only if none found
+    console.log('Creating new TradeZen sheet');
     const response = await window.gapi.client.sheets.spreadsheets.create({
       properties: {
         title: SHEET_NAME
@@ -159,7 +178,7 @@ class GoogleAPIClient {
     
     localStorage.setItem(STORAGE_KEYS.SHEET_ID, sheetId);
 
-    // Initialize with headers using the actual sheet IDs
+    // Initialize with headers
     await this.initializeSheets(sheetId, sheets);
 
     return sheetId;
@@ -167,7 +186,6 @@ class GoogleAPIClient {
 
   // Initialize sheets with headers
   async initializeSheets(sheetId, sheets) {
-    // Find the actual sheet IDs
     const tradesSheetId = sheets.find(s => s.properties.title === SHEETS.TRADES).properties.sheetId;
     const tagsSheetId = sheets.find(s => s.properties.title === SHEETS.TAGS).properties.sheetId;
     const settingsSheetId = sheets.find(s => s.properties.title === SHEETS.SETTINGS).properties.sheetId;
@@ -242,46 +260,88 @@ class GoogleAPIClient {
     });
   }
 
-  // Get or create Drive folder
+  // Get or create organized Drive folder structure
   async getOrCreateDriveFolder() {
     const savedFolderId = localStorage.getItem(STORAGE_KEYS.DRIVE_FOLDER_ID);
     
     if (savedFolderId) {
-      return savedFolderId;
+      try {
+        // Verify folder exists
+        await window.gapi.client.drive.files.get({
+          fileId: savedFolderId
+        });
+        return savedFolderId;
+      } catch (err) {
+        console.log('Saved folder not found, searching/creating...');
+      }
     }
 
-    // Search for existing folder
-    const response = await window.gapi.client.drive.files.list({
-      q: "name='TradeZen_Screenshots' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+    // Search for existing TradeZen folder
+    const searchResponse = await window.gapi.client.drive.files.list({
+      q: "name='TradeZen' and mimeType='application/vnd.google-apps.folder' and trashed=false",
       fields: 'files(id, name)'
     });
 
-    if (response.result.files && response.result.files.length > 0) {
-      const folderId = response.result.files[0].id;
-      localStorage.setItem(STORAGE_KEYS.DRIVE_FOLDER_ID, folderId);
-      return folderId;
+    let mainFolderId;
+
+    if (searchResponse.result.files && searchResponse.result.files.length > 0) {
+      mainFolderId = searchResponse.result.files[0].id;
+    } else {
+      // Create main TradeZen folder
+      const mainFolder = await window.gapi.client.drive.files.create({
+        resource: {
+          name: 'TradeZen',
+          mimeType: 'application/vnd.google-apps.folder'
+        },
+        fields: 'id'
+      });
+      mainFolderId = mainFolder.result.id;
     }
 
-    // Create new folder
-    const folder = await window.gapi.client.drive.files.create({
-      resource: {
-        name: 'TradeZen_Screenshots',
-        mimeType: 'application/vnd.google-apps.folder'
-      },
-      fields: 'id'
+    // Search for Screenshots subfolder
+    const subSearchResponse = await window.gapi.client.drive.files.list({
+      q: `name='Screenshots' and '${mainFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)'
     });
 
-    const folderId = folder.result.id;
-    localStorage.setItem(STORAGE_KEYS.DRIVE_FOLDER_ID, folderId);
-    return folderId;
+    let screenshotsFolderId;
+
+    if (subSearchResponse.result.files && subSearchResponse.result.files.length > 0) {
+      screenshotsFolderId = subSearchResponse.result.files[0].id;
+    } else {
+      // Create Screenshots subfolder
+      const screenshotsFolder = await window.gapi.client.drive.files.create({
+        resource: {
+          name: 'Screenshots',
+          parents: [mainFolderId],
+          mimeType: 'application/vnd.google-apps.folder'
+        },
+        fields: 'id'
+      });
+      screenshotsFolderId = screenshotsFolder.result.id;
+    }
+
+    localStorage.setItem(STORAGE_KEYS.DRIVE_FOLDER_ID, screenshotsFolderId);
+    return screenshotsFolderId;
   }
 
-  // Upload image to Drive
+  // Upload image to Drive with better naming
   async uploadImage(imageBlob, filename) {
     const folderId = await this.getOrCreateDriveFolder();
     
+    // Extract date and time from filename if present
+    // Expected format: uuid_YYYY-MM-DD_HH-MM.jpg
+    const parts = filename.split('_');
+    let displayName = filename;
+    
+    if (parts.length >= 2) {
+      const date = parts[1]; // YYYY-MM-DD
+      const time = parts[2]?.replace('.jpg', ''); // HH-MM
+      displayName = `Trade_${date}_${time || 'unknown'}.jpg`;
+    }
+    
     const metadata = {
-      name: filename,
+      name: displayName,
       parents: [folderId],
       mimeType: 'image/jpeg'
     };
