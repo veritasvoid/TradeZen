@@ -24,7 +24,8 @@ const Dashboard = () => {
   // Get available years from trades (including current year even if no trades)
   const yearsFromTrades = [...new Set(allTrades.map(t => parseInt(t.date.split('-')[0])))];
   const availableYears = [...new Set([...yearsFromTrades, currentYear])].sort((a, b) => a - b);
-  const minYear = Math.min(...availableYears);
+  
+  // Allow navigation to any year (no min restriction, max is current year)
   const maxYear = currentYear; // Can't go beyond current year
   
   // Filter trades by selected year
@@ -65,8 +66,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-center gap-4">
           <button
             onClick={() => setSelectedYear(selectedYear - 1)}
-            disabled={selectedYear <= minYear}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all"
           >
             ← {selectedYear - 1}
           </button>
