@@ -26,10 +26,8 @@ const parseTradeRow = (row) => {
 
 // Fetch all trades
 const fetchTrades = async () => {
-  // Use hardcoded sheet ID - guaranteed to work
-  const sheetId = '1ruzm5D-ofifAU7d5oRChBT7DAYFTlVLgULSsXvYEtXU';
-  
-  console.log('🔍 Fetching all trades from sheet:', sheetId);
+  const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
+  if (!sheetId) return [];
 
   try {
     const response = await window.gapi.client.sheets.spreadsheets.values.get({
@@ -38,44 +36,20 @@ const fetchTrades = async () => {
     });
 
     const rows = response.result.values || [];
-    console.log('📥 Received rows from sheet:', rows.length);
-    
-    const parsed = rows.map(parseTradeRow).filter(Boolean);
-    console.log('✅ Parsed trades:', parsed.length);
-    
-    return parsed;
+    return rows.map(parseTradeRow).filter(Boolean);
   } catch (error) {
-    console.error('❌ Failed to fetch trades:', error);
+    console.error('Failed to fetch trades:', error);
     return [];
   }
 };
 
 // Fetch trades for specific month
 const fetchMonthTrades = async (year, month) => {
-  console.log(`📅 Fetching trades for: ${year}-${month} (month is 0-indexed, so ${month} = ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month]})`);
-  
   const allTrades = await fetchTrades();
-  console.log(`📊 Total trades in sheet: ${allTrades.length}`);
-  
-  if (allTrades.length > 0) {
-    console.log('📋 All trade dates:', allTrades.map(t => t.date));
-  }
-  
-  const filtered = allTrades.filter(trade => {
+  return allTrades.filter(trade => {
     const [tradeYear, tradeMonth] = trade.date.split('-').map(Number);
-    const matches = tradeYear === year && tradeMonth === month + 1;
-    
-    if (!matches) {
-      console.log(`  ❌ Trade ${trade.date} doesn't match: tradeYear=${tradeYear} vs ${year}, tradeMonth=${tradeMonth} vs ${month + 1}`);
-    } else {
-      console.log(`  ✅ Trade ${trade.date} MATCHES!`);
-    }
-    
-    return matches;
+    return tradeYear === year && tradeMonth === month + 1;
   });
-  
-  console.log(`✅ Filtered to ${filtered.length} trades for ${year}-${month + 1}`);
-  return filtered;
 };
 
 // Add trade
@@ -92,9 +66,7 @@ const addTrade = async (tradeData) => {
       useWebWorker: true
     });
     
-    // Better filename: uuid_date_time.jpg
-    const timeFormatted = tradeData.time.replace(':', '-');
-    const filename = `${tradeData.tradeId}_${tradeData.date}_${timeFormatted}.jpg`;
+    const filename = `${tradeData.tradeId}_${tradeData.date}.jpg`;
     driveImageId = await googleAPI.uploadImage(compressed, filename);
   }
 
@@ -131,14 +103,14 @@ const addTrade = async (tradeData) => {
   };
 };
 
-// Update trade - FIXED to actually update, not create duplicate
+// Update trade
 const updateTrade = async ({ tradeId, updates }) => {
   const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
   
-  // Find row index - search in column A starting from row 2
+  // Find row index
   const response = await window.gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEETS.TRADES}!A2:A`
+    range: `${SHEETS.TRADES}!A:A`
   });
 
   const rows = response.result.values || [];
@@ -148,13 +120,10 @@ const updateTrade = async ({ tradeId, updates }) => {
     throw new Error('Trade not found');
   }
 
-  // Actual row number (add 2 because: 1 for header, 1 for 0-based index)
-  const actualRowNumber = rowIndex + 2;
-
   // Get existing trade data
   const tradeResponse = await window.gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEETS.TRADES}!A${actualRowNumber}:L${actualRowNumber}`
+    range: `${SHEETS.TRADES}!A${rowIndex + 1}:L${rowIndex + 1}`
   });
 
   const existingData = tradeResponse.result.values[0];
@@ -162,23 +131,16 @@ const updateTrade = async ({ tradeId, updates }) => {
 
   // Handle image update
   let driveImageId = trade.driveImageId;
-  if (updates.driveImageId === '') {
-    // User explicitly deleted the image
-    driveImageId = '';
-  } else if (updates.screenshot) {
-    // User uploaded a new image
+  if (updates.screenshot) {
     const compressed = await imageCompression(updates.screenshot, {
       maxSizeMB: 1,
       maxWidthOrHeight: 1200,
       useWebWorker: true
     });
     
-    const date = updates.date || trade.date;
-    const time = (updates.time || trade.time).replace(':', '-');
-    const filename = `${tradeId}_${date}_${time}.jpg`;
+    const filename = `${tradeId}_${updates.date || trade.date}.jpg`;
     driveImageId = await googleAPI.uploadImage(compressed, filename);
   }
-  // Otherwise keep existing driveImageId
 
   const now = new Date().toISOString();
   const updatedData = [
@@ -196,10 +158,9 @@ const updateTrade = async ({ tradeId, updates }) => {
     now
   ];
 
-  // UPDATE the existing row, don't append
   await window.gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
-    range: `${SHEETS.TRADES}!A${actualRowNumber}:L${actualRowNumber}`,
+    range: `${SHEETS.TRADES}!A${rowIndex + 1}:L${rowIndex + 1}`,
     valueInputOption: 'USER_ENTERED',
     resource: {
       values: [updatedData]
@@ -209,30 +170,14 @@ const updateTrade = async ({ tradeId, updates }) => {
   return parseTradeRow(updatedData);
 };
 
-// Delete trade - FIXED to use correct sheet ID
+// Delete trade
 const deleteTrade = async (tradeId) => {
   const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
-  
-  // Get the actual Trades sheet ID (not 0)
-  const sheetInfo = await window.gapi.client.sheets.spreadsheets.get({
-    spreadsheetId: sheetId,
-    fields: 'sheets(properties(sheetId,title))'
-  });
-  
-  const tradesSheet = sheetInfo.result.sheets.find(
-    s => s.properties.title === SHEETS.TRADES
-  );
-  
-  if (!tradesSheet) {
-    throw new Error('Trades sheet not found');
-  }
-  
-  const tradesSheetId = tradesSheet.properties.sheetId;
   
   // Find row index
   const response = await window.gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEETS.TRADES}!A2:A`
+    range: `${SHEETS.TRADES}!A:A`
   });
 
   const rows = response.result.values || [];
@@ -242,20 +187,17 @@ const deleteTrade = async (tradeId) => {
     throw new Error('Trade not found');
   }
 
-  // Actual row index (add 1 for header row)
-  const actualRowIndex = rowIndex + 1;
-
-  // Delete row using correct sheet ID
+  // Delete row
   await window.gapi.client.sheets.spreadsheets.batchUpdate({
     spreadsheetId: sheetId,
     resource: {
       requests: [{
         deleteDimension: {
           range: {
-            sheetId: tradesSheetId, // Use actual sheet ID, not 0
+            sheetId: 0,
             dimension: 'ROWS',
-            startIndex: actualRowIndex,
-            endIndex: actualRowIndex + 1
+            startIndex: rowIndex,
+            endIndex: rowIndex + 1
           }
         }
       }]
@@ -268,8 +210,8 @@ export const useTrades = () => {
   return useQuery({
     queryKey: ['trades'],
     queryFn: fetchTrades,
-    staleTime: 5 * 60 * 1000,
-    cacheTime: 30 * 60 * 1000
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 30 * 60 * 1000 // 30 minutes
   });
 };
 
@@ -287,19 +229,27 @@ export const useAddTrade = () => {
   return useMutation({
     mutationFn: addTrade,
     onMutate: async (newTrade) => {
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['trades'] });
+      
+      // Snapshot previous value
       const previousTrades = queryClient.getQueryData(['trades']);
+      
+      // Optimistically update
       if (previousTrades) {
         queryClient.setQueryData(['trades'], old => [...(old || []), newTrade]);
       }
+      
       return { previousTrades };
     },
     onError: (err, newTrade, context) => {
+      // Rollback on error
       if (context?.previousTrades) {
         queryClient.setQueryData(['trades'], context.previousTrades);
       }
     },
     onSettled: () => {
+      // Refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['trades'] });
     }
   });
@@ -323,12 +273,15 @@ export const useDeleteTrade = () => {
     mutationFn: deleteTrade,
     onMutate: async (tradeId) => {
       await queryClient.cancelQueries({ queryKey: ['trades'] });
+      
       const previousTrades = queryClient.getQueryData(['trades']);
+      
       if (previousTrades) {
         queryClient.setQueryData(['trades'], old => 
           (old || []).filter(t => t.tradeId !== tradeId)
         );
       }
+      
       return { previousTrades };
     },
     onError: (err, tradeId, context) => {
@@ -338,6 +291,64 @@ export const useDeleteTrade = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
+    }
+  });
+};
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { SHEETS } from '@/lib/constants';
+
+// Clear all data from all sheets
+const clearAllData = async () => {
+  const sheetId = '1ruzm5D-ofifAU7d5oRChBT7DAYFTlVLgULSsXvYEtXU';
+  
+  console.log('🗑️ Clearing all data from sheet:', sheetId);
+
+  try {
+    // Clear Trades (keep header row)
+    await window.gapi.client.sheets.spreadsheets.values.clear({
+      spreadsheetId: sheetId,
+      range: `${SHEETS.TRADES}!A2:L`
+    });
+    console.log('✅ Cleared trades');
+
+    // Clear Tags (keep header row)
+    await window.gapi.client.sheets.spreadsheets.values.clear({
+      spreadsheetId: sheetId,
+      range: `${SHEETS.TAGS}!A2:E`
+    });
+    console.log('✅ Cleared tags');
+
+    // Clear Settings (keep header row)
+    await window.gapi.client.sheets.spreadsheets.values.clear({
+      spreadsheetId: sheetId,
+      range: `${SHEETS.SETTINGS}!A2:B`
+    });
+    console.log('✅ Cleared settings');
+
+    console.log('✅ All data cleared successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Failed to clear data:', error);
+    throw error;
+  }
+};
+
+// Hook to clear all data
+export const useClearAllData = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: clearAllData,
+    onSuccess: () => {
+      // Invalidate all queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      
+      // Also clear localStorage settings
+      localStorage.removeItem('tradezen-settings');
+      
+      console.log('✅ Cache invalidated, app will reload fresh data');
     }
   });
 };
