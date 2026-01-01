@@ -47,7 +47,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-4 gap-6">
           <StatCard 
             label="Account Balance"
-            value={formatCompactCurrency(accountBalance, currency)}
+            value={formatFullCurrency(accountBalance, currency)}
             trend={accountBalance >= startingBalance ? 'up' : 'down'}
             icon={<TrendingUp className="w-6 h-6" />}
           />
@@ -144,6 +144,17 @@ const Dashboard = () => {
   );
 };
 
+// Format currency with full amount (no abbreviation) - e.g., +$5,001.25
+const formatFullCurrency = (amount, symbol = '$') => {
+  const prefix = amount >= 0 ? '+' : '-';
+  const absAmount = Math.abs(amount);
+  const formatted = absAmount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return `${prefix}${symbol}${formatted}`;
+};
+
 const calculateTagPerformance = (trades, tags) => {
   const tagStats = {};
   trades.forEach(trade => {
@@ -166,12 +177,14 @@ const StatCard = ({ label, value, trend, subtitle, icon }) => {
   const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-slate-400';
   return (
     <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all">
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{label}</p>
-        {icon && <div className={trendColor}>{icon}</div>}
+      <div className="flex flex-col items-center text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{label}</p>
+          {icon && <div className={trendColor}>{icon}</div>}
+        </div>
+        <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
+        {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
-      <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
-      {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
     </div>
   );
 };
