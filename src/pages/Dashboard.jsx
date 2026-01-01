@@ -62,7 +62,6 @@ const Dashboard = () => {
             value={`${overallWinRate}%`}
             trend={overallWinRate >= 50 ? 'up' : 'down'}
             subtitle={`${totalWins}W / ${totalLosses}L`}
-            donut={{ winRate: overallWinRate }}
           />
           <StatCard 
             label="Total Trades"
@@ -77,7 +76,7 @@ const Dashboard = () => {
           {/* LEFT: Performance Metrics */}
           <div className="col-span-3 space-y-6">
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-              <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold">Performance</h3>
+              <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold text-center">Performance</h3>
               <div className="space-y-4">
                 <MetricRow label="Avg Winner" value={formatCompactCurrency(avgWinner, currency)} positive />
                 <MetricRow label="Avg Loser" value={formatCompactCurrency(avgLoser, currency)} negative />
@@ -90,7 +89,7 @@ const Dashboard = () => {
             {/* Strategy Performance */}
             {tagPerformance.length > 0 && (
               <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold">Strategies</h3>
+                <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold text-center">Strategies</h3>
                 <div className="space-y-3">
                   {tagPerformance.map(tag => (
                     <StrategyCard key={tag.tagId} tag={tag} currency={currency} />
@@ -104,7 +103,7 @@ const Dashboard = () => {
           <div className="col-span-9 space-y-6">
             {/* Chart */}
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-              <h2 className="text-2xl font-black mb-6">{currentYear}</h2>
+              <h2 className="text-2xl font-black mb-6 text-center">{currentYear}</h2>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
@@ -124,7 +123,7 @@ const Dashboard = () => {
 
             {/* Monthly Grid */}
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-              <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold">Monthly Overview</h3>
+              <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold text-center">Monthly Overview</h3>
               <div className="grid grid-cols-6 gap-4">
                 {yearlyStats.map((m) => (
                   <MonthCard
@@ -163,7 +162,7 @@ const calculateTagPerformance = (trades, tags) => {
     .sort((a, b) => b.totalPL - a.totalPL);
 };
 
-const StatCard = ({ label, value, trend, subtitle, icon, donut }) => {
+const StatCard = ({ label, value, trend, subtitle, icon }) => {
   const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-slate-400';
   return (
     <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all">
@@ -171,37 +170,8 @@ const StatCard = ({ label, value, trend, subtitle, icon, donut }) => {
         <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{label}</p>
         {icon && <div className={trendColor}>{icon}</div>}
       </div>
-      
-      {donut ? (
-        <div className="flex items-center gap-4">
-          <div className="relative w-20 h-20 flex-shrink-0">
-            <svg viewBox="0 0 100 100" className="transform -rotate-90">
-              <circle cx="50" cy="50" r="35" fill="none" stroke="#1e293b" strokeWidth="12" />
-              {donut.winRate > 0 && (
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#10b981" strokeWidth="12"
-                  strokeDasharray={`${(donut.winRate / 100) * 220} 220`} />
-              )}
-              {donut.winRate < 100 && (
-                <circle cx="50" cy="50" r="35" fill="none" stroke="#ef4444" strokeWidth="12"
-                  strokeDasharray={`${((100 - donut.winRate) / 100) * 220} 220`}
-                  strokeDashoffset={`${-(donut.winRate / 100) * 220}`} />
-              )}
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-black">{donut.winRate}%</span>
-            </div>
-          </div>
-          <div>
-            <p className={`text-3xl font-black ${trendColor}`}>{value}</p>
-            {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
-          </div>
-        </div>
-      ) : (
-        <>
-          <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
-          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-        </>
-      )}
+      <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
+      {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
     </div>
   );
 };
