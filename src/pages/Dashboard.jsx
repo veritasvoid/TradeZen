@@ -53,11 +53,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
-      <div className="flex-1 grid grid-cols-12">
+    <div className="h-[calc(100vh-80px)] overflow-hidden flex flex-col pt-20">
+      <div className="flex-1 grid grid-cols-12 overflow-hidden">
         
         {/* LEFT SIDEBAR - Performance */}
-        <div className="col-span-2 bg-slate-900/50 border-r border-slate-700/50 p-6 flex flex-col">
+        <div className="col-span-2 bg-slate-900/50 border-r border-slate-700/50 p-6 flex flex-col overflow-y-auto">
           <div className="flex-1 flex flex-col justify-center space-y-6">
             {/* Win Rate + Total Trades - LARGER */}
             <div className="bg-slate-800/30 rounded-lg p-5">
@@ -79,14 +79,14 @@ const Dashboard = () => {
         </div>
 
         {/* CENTER - Chart + Monthly Tiles */}
-        <div className="col-span-8 flex flex-col">
+        <div className="col-span-8 flex flex-col overflow-hidden">
           {/* Chart Title */}
           <div className="border-b border-slate-700/50 px-8 py-5">
             <h2 className="text-2xl font-bold text-center">Monthly P&L</h2>
           </div>
 
-          {/* Chart - Takes more space */}
-          <div className="flex-[2] p-8">
+          {/* Chart - 55% of space */}
+          <div className="h-[55%] p-8">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 40, right: 30, left: 30, bottom: 30 }}>
                 <XAxis 
@@ -119,9 +119,9 @@ const Dashboard = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Monthly Tiles - Takes remaining space */}
-          <div className="flex-1 border-t border-slate-700/50 p-6 overflow-y-auto">
-            <div className="grid grid-cols-6 gap-4 h-full">
+          {/* Monthly Tiles - 45% of space */}
+          <div className="h-[45%] border-t border-slate-700/50 p-6 overflow-y-auto">
+            <div className="grid grid-cols-6 gap-3">
               {yearlyStats.map((monthData) => (
                 <MonthCard
                   key={monthData.month}
@@ -137,7 +137,7 @@ const Dashboard = () => {
         </div>
 
         {/* RIGHT SIDEBAR - Summary + Tags */}
-        <div className="col-span-2 bg-slate-900/50 border-l border-slate-700/50 p-6 flex flex-col">
+        <div className="col-span-2 bg-slate-900/50 border-l border-slate-700/50 p-6 flex flex-col overflow-y-auto">
           <div className="flex-1 flex flex-col justify-center space-y-5">
             <div className="text-slate-400 text-sm font-semibold">{currentYear}</div>
 
