@@ -17,11 +17,10 @@ const parseTagRow = (row) => {
 
 // Fetch all tags
 const fetchTags = async () => {
-  const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
-  if (!sheetId) {
-    // Return default tags if no sheet exists yet
-    return [];
-  }
+  // Use hardcoded sheet ID
+  const sheetId = '1ruzm5D-ofifAU7d5oRChBT7DAYFTlVLgULSsXvYEtXU';
+  
+  console.log('🏷️ Fetching tags from sheet:', sheetId);
 
   try {
     const response = await window.gapi.client.sheets.spreadsheets.values.get({
@@ -30,12 +29,15 @@ const fetchTags = async () => {
     });
 
     const rows = response.result.values || [];
+    console.log('📥 Received tag rows:', rows.length);
+    
     const tags = rows.map(parseTagRow).filter(Boolean);
+    console.log('✅ Parsed tags:', tags);
     
     // Sort by order
     return tags.sort((a, b) => a.order - b.order);
   } catch (error) {
-    console.error('Failed to fetch tags:', error);
+    console.error('❌ Failed to fetch tags:', error);
     return [];
   }
 };
@@ -167,8 +169,9 @@ export const useTags = () => {
   return useQuery({
     queryKey: ['tags'],
     queryFn: fetchTags,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    cacheTime: 60 * 60 * 1000 // 1 hour
+    staleTime: 0, // Always fetch fresh
+    gcTime: 0, // Don't cache (React Query v5)
+    refetchOnMount: 'always' // Always refetch
   });
 };
 
