@@ -57,32 +57,75 @@ const Dashboard = () => {
   if (isLoading || tagsLoading) return <div className="p-6"><Loading type="skeleton-grid" /></div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" style={{ paddingTop: '80px' }}>
-      <div className="max-w-[1800px] mx-auto p-6 space-y-6">
-        
-        {/* YEAR SELECTOR */}
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setSelectedYear(selectedYear - 1)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all"
-          >
-            ← {selectedYear - 1}
-          </button>
-          
-          <div className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
-            <h1 className="text-3xl font-black">{selectedYear}</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* COMPACT HEADER WITH LOGO + NAV */}
+      <div className="fixed top-0 left-0 right-0 z-50 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-sm">
+        <div className="max-w-[1800px] mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+                <TrendingUp size={20} className="text-white" />
+              </div>
+              <span className="text-xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                TradeZen
+              </span>
+            </button>
+
+            {/* Year Selector + Nav Buttons */}
+            <div className="flex items-center gap-4">
+              {/* Year Navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedYear(selectedYear - 1)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-sm font-semibold"
+                >
+                  ← {selectedYear - 1}
+                </button>
+                
+                <div className="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                  <span className="text-lg font-black">{selectedYear}</span>
+                </div>
+                
+                <button
+                  onClick={() => setSelectedYear(selectedYear + 1)}
+                  disabled={selectedYear >= maxYear}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all text-sm font-semibold"
+                >
+                  {selectedYear + 1} →
+                </button>
+              </div>
+
+              {/* Nav Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/month')}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-sm font-semibold"
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => navigate('/tags')}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-sm font-semibold"
+                >
+                  Tags
+                </button>
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-sm font-semibold"
+                >
+                  Settings
+                </button>
+              </div>
+            </div>
           </div>
-          
-          <button
-            onClick={() => setSelectedYear(selectedYear + 1)}
-            disabled={selectedYear >= maxYear}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all"
-          >
-            {selectedYear + 1} →
-          </button>
         </div>
-        
-        {/* TOP STATS ROW - 3 CARDS */}
+      </div>
+
+      <div className="max-w-[1800px] mx-auto p-6 pt-20 space-y-4">{/* pt-20 for header clearance */}
         <div className="grid grid-cols-3 gap-6">
           <StatCard 
             label="Total P&L"
@@ -212,18 +255,18 @@ const StatCard = ({ label, value, trend, subtitle, icon, showMiniChart, chartDat
   const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-slate-400';
   
   return (
-    <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all">
+    <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4 hover:border-slate-600/50 transition-all">
       <div className="flex flex-col items-center text-center">
-        <div className="flex items-center justify-center gap-2 mb-3">
+        <div className="flex items-center justify-center gap-2 mb-2">
           <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{label}</p>
           {icon && <div className={trendColor}>{icon}</div>}
         </div>
-        <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
+        <p className={`text-2xl font-black ${trendColor} mb-1`}>{value}</p>
         {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
         
         {/* Mini Chart */}
         {showMiniChart && chartData && (
-          <div className="w-full h-12 mt-4">
+          <div className="w-full h-8 mt-3">
             <svg viewBox="0 0 100 40" className="w-full h-full" preserveAspectRatio="none">
               <polyline
                 points={chartData.map((val, i) => {
