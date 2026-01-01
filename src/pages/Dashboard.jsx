@@ -23,9 +23,7 @@ const Dashboard = () => {
   const totalTrades = yearlyStats.reduce((sum, m) => sum + m.tradeCount, 0);
   const totalWins = yearlyStats.reduce((sum, m) => sum + m.winCount, 0);
   const totalLosses = yearlyStats.reduce((sum, m) => sum + m.lossCount, 0);
-  const overallWinRate = totalTrades > 0 
-    ? Math.round((totalWins / totalTrades) * 100) 
-    : 0;
+  const overallWinRate = totalTrades > 0 ? Math.round((totalWins / totalTrades) * 100) : 0;
 
   const winners = trades.filter(t => t.amount > 0);
   const losers = trades.filter(t => t.amount < 0);
@@ -41,11 +39,13 @@ const Dashboard = () => {
   const chartData = yearlyStats.map(m => ({
     month: monthNames[m.month],
     pl: m.totalPL,
-    monthIndex: m.month,
-    isCurrentMonth: m.month === currentMonth
+    monthIndex: m.month
   }));
 
   const tagPerformance = calculateTagPerformance(trades, tags);
+
+  console.log('📊 Tags loaded:', tags);
+  console.log('📈 Tag performance:', tagPerformance);
 
   if (isLoading || tagsLoading) {
     return (
@@ -59,40 +59,24 @@ const Dashboard = () => {
     <div className="h-[calc(100vh-80px)] overflow-y-auto">
       <div className="grid grid-cols-12 h-full">
         
-        {/* LEFT SIDEBAR - Performance + Tags */}
-        <div className="col-span-2 bg-slate-900/50 border-r border-slate-700/50 p-6 space-y-6 overflow-y-auto">
-          <div>
-            <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-4 font-semibold">Performance</h3>
-            
-            <div className="space-y-6">
-              <MetricBox label="Total Trades" sublabel="Count" value={totalTrades} />
-              
-              <div>
-                <div className="text-slate-400 text-xs mb-3">Win Rate</div>
-                <div className="flex items-center justify-center mb-4">
-                  <WinRateDonut winRate={overallWinRate} />
-                </div>
-              </div>
-
-              <MetricBox label="Avg P&L/Trade" value={formatCompactCurrency(avgPLPerTrade, currency)} valueColor={avgPLPerTrade >= 0 ? 'text-emerald-400' : 'text-red-400'} />
-              <MetricBox label="Avg Winner" value={formatCompactCurrency(avgWinner, currency)} valueColor="text-emerald-400" />
-              <MetricBox label="Avg Loser" value={formatCompactCurrency(avgLoser, currency)} valueColor="text-red-400" />
-              <MetricBox label="Best Trade" value={formatCompactCurrency(bestTrade, currency)} valueColor="text-emerald-400" highlight="emerald" />
-              <MetricBox label="Worst Trade" value={formatCompactCurrency(worstTrade, currency)} valueColor="text-red-400" highlight="red" />
+        {/* LEFT SIDEBAR - Compact Performance */}
+        <div className="col-span-2 bg-slate-900/50 border-r border-slate-700/50 p-4 space-y-3 overflow-y-auto">
+          {/* Win Rate + Total Trades Combined */}
+          <div className="bg-slate-800/30 rounded-lg p-3">
+            <div className="flex items-center justify-center mb-2">
+              <WinRateDonut winRate={overallWinRate} size="small" />
+            </div>
+            <div className="text-center">
+              <div className="text-slate-400 text-[10px] mb-1">Total Trades</div>
+              <div className="text-xl font-bold text-white">{totalTrades}</div>
             </div>
           </div>
 
-          {/* Tag Performance */}
-          {tagPerformance.length > 0 && (
-            <div className="pt-6 border-t border-slate-700/50">
-              <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-4 font-semibold">Strategy Performance</h3>
-              <div className="space-y-3">
-                {tagPerformance.map(tag => (
-                  <TagCard key={tag.tagId} tag={tag} currency={currency} />
-                ))}
-              </div>
-            </div>
-          )}
+          <MetricBoxSmall label="Avg P&L" value={formatCompactCurrency(avgPLPerTrade, currency)} valueColor={avgPLPerTrade >= 0 ? 'text-emerald-400' : 'text-red-400'} />
+          <MetricBoxSmall label="Avg Winner" value={formatCompactCurrency(avgWinner, currency)} valueColor="text-emerald-400" />
+          <MetricBoxSmall label="Avg Loser" value={formatCompactCurrency(avgLoser, currency)} valueColor="text-red-400" />
+          <MetricBoxSmall label="Best" value={formatCompactCurrency(bestTrade, currency)} valueColor="text-emerald-400" highlight="emerald" />
+          <MetricBoxSmall label="Worst" value={formatCompactCurrency(worstTrade, currency)} valueColor="text-red-400" highlight="red" />
         </div>
 
         {/* CENTER - Chart */}
@@ -150,26 +134,31 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR - Summary */}
-        <div className="col-span-2 bg-slate-900/50 border-l border-slate-700/50 p-6">
-          <div className="space-y-6">
-            <div>
-              <div className="text-slate-400 text-sm mb-4">{currentYear}</div>
+        {/* RIGHT SIDEBAR - Summary + Tags */}
+        <div className="col-span-2 bg-slate-900/50 border-l border-slate-700/50 p-4 space-y-3 overflow-y-auto">
+          <div className="text-slate-400 text-sm mb-2">{currentYear}</div>
+
+          <SummaryBoxSmall
+            label="Account Balance"
+            value={formatCompactCurrency(accountBalance, currency)}
+            valueColor={accountBalance >= startingBalance ? 'text-emerald-400' : 'text-red-400'}
+            large
+          />
+
+          <SummaryBoxSmall
+            label="Yearly P&L"
+            value={formatCompactCurrency(totalPL, currency)}
+            valueColor={totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}
+          />
+
+          {/* Tag Performance - No Header */}
+          {tagPerformance.length > 0 && (
+            <div className="space-y-2 pt-3 border-t border-slate-700/50">
+              {tagPerformance.map(tag => (
+                <TagCardCompact key={tag.tagId} tag={tag} currency={currency} />
+              ))}
             </div>
-
-            <SummaryBox
-              label="Account Balance"
-              value={formatCompactCurrency(accountBalance, currency)}
-              valueColor={accountBalance >= startingBalance ? 'text-emerald-400' : 'text-red-400'}
-              large
-            />
-
-            <SummaryBox
-              label={`Yearly P&L`}
-              value={formatCompactCurrency(totalPL, currency)}
-              valueColor={totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}
-            />
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -210,7 +199,7 @@ const calculateTagPerformance = (trades, tags) => {
     .sort((a, b) => b.totalPL - a.totalPL);
 };
 
-const MetricBox = ({ label, sublabel, value, valueColor = 'text-white', highlight }) => {
+const MetricBoxSmall = ({ label, value, valueColor = 'text-white', highlight }) => {
   const bgClass = highlight === 'emerald' 
     ? 'bg-emerald-900/20' 
     : highlight === 'red' 
@@ -218,89 +207,83 @@ const MetricBox = ({ label, sublabel, value, valueColor = 'text-white', highligh
     : 'bg-slate-800/30';
 
   return (
-    <div className={`${bgClass} rounded-lg p-4`}>
-      <div className="text-slate-400 text-xs mb-1">{label}</div>
-      {sublabel && <div className="text-slate-500 text-[10px] mb-2">{sublabel}</div>}
-      <div className={`text-2xl font-bold ${valueColor}`}>{value}</div>
+    <div className={`${bgClass} rounded-lg p-2.5`}>
+      <div className="text-slate-400 text-[10px] mb-1">{label}</div>
+      <div className={`text-lg font-bold ${valueColor}`}>{value}</div>
     </div>
   );
 };
 
-const TagCard = ({ tag, currency }) => {
+const TagCardCompact = ({ tag, currency }) => {
   const isPositive = tag.totalPL >= 0;
   
   return (
-    <div className="bg-slate-800/30 rounded-lg p-3 hover:bg-slate-800/50 transition-all">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-2xl">{tag.tagEmoji}</span>
-        <div className="flex-1">
-          <div className="text-sm font-bold" style={{ color: tag.tagColor }}>
+    <div className="bg-slate-800/30 rounded-lg p-2.5 hover:bg-slate-800/50 transition-all">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-xl">{tag.tagEmoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold truncate" style={{ color: tag.tagColor }}>
             {tag.tagName}
           </div>
         </div>
-        {isPositive ? <TrendingUp size={16} className="text-emerald-400" /> : <TrendingDown size={16} className="text-red-400" />}
+        {isPositive ? <TrendingUp size={14} className="text-emerald-400 flex-shrink-0" /> : <TrendingDown size={14} className="text-red-400 flex-shrink-0" />}
       </div>
       
-      <div className={`text-xl font-bold mb-2 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+      <div className={`text-lg font-bold mb-1.5 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
         {formatCompactCurrency(tag.totalPL, currency)}
       </div>
       
-      <div className="space-y-1 text-[10px] text-slate-400">
-        <div className="flex justify-between">
+      <div className="grid grid-cols-2 gap-1 text-[9px] text-slate-400">
+        <div>
           <span>Trades:</span>
-          <span className="font-bold text-white">{tag.trades}</span>
+          <span className="font-bold text-white ml-1">{tag.trades}</span>
         </div>
-        <div className="flex justify-between">
-          <span>Win Rate:</span>
-          <span className={`font-bold ${tag.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>{tag.winRate}%</span>
-        </div>
-        <div className="flex justify-between">
-          <span>W/L:</span>
-          <span className="font-bold text-white">{tag.wins}/{tag.losses}</span>
+        <div>
+          <span>WR:</span>
+          <span className={`font-bold ml-1 ${tag.winRate >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>{tag.winRate}%</span>
         </div>
       </div>
     </div>
   );
 };
 
-const SummaryBox = ({ label, value, valueColor = 'text-white', large = false }) => (
-  <div className="bg-slate-800/50 rounded-lg p-4">
-    <div className="text-slate-400 text-xs mb-2">{label}</div>
-    <div className={`${large ? 'text-2xl' : 'text-xl'} font-bold ${valueColor}`}>{value}</div>
+const SummaryBoxSmall = ({ label, value, valueColor = 'text-white', large = false }) => (
+  <div className="bg-slate-800/50 rounded-lg p-3">
+    <div className="text-slate-400 text-[10px] mb-1">{label}</div>
+    <div className={`${large ? 'text-xl' : 'text-lg'} font-bold ${valueColor}`}>{value}</div>
   </div>
 );
 
-const WinRateDonut = ({ winRate }) => {
-  const radius = 40;
+const WinRateDonut = ({ winRate, size = 'normal' }) => {
+  const dimensions = size === 'small' ? { w: 20, h: 20, r: 35, stroke: 10, fontSize: 'text-lg' } : { w: 24, h: 24, r: 40, stroke: 12, fontSize: 'text-2xl' };
+  const radius = dimensions.r;
   const circumference = 2 * Math.PI * radius;
   const winPercent = winRate / 100;
   const lossPercent = 1 - winPercent;
 
   return (
-    <div className="relative w-24 h-24">
+    <div className={`relative w-${dimensions.w} h-${dimensions.h}`}>
       <svg viewBox="0 0 100 100" className="transform -rotate-90">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" strokeWidth="12" />
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#1e293b" strokeWidth={dimensions.stroke} />
         {winRate > 0 && (
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="12"
-            strokeDasharray={`${winPercent * circumference} ${circumference}`} strokeDashoffset="0" />
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#10b981" strokeWidth={dimensions.stroke}
+            strokeDasharray={`${winPercent * circumference} ${circumference}`} />
         )}
         {winRate < 100 && (
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="12"
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#ef4444" strokeWidth={dimensions.stroke}
             strokeDasharray={`${lossPercent * circumference} ${circumference}`}
             strokeDashoffset={`${-winPercent * circumference}`} />
         )}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold">{winRate}%</span>
+        <span className={`${dimensions.fontSize} font-bold`}>{winRate}%</span>
       </div>
     </div>
   );
 };
 
 const MonthCard = ({ month, stats, isCurrentMonth, onClick, currency }) => {
-  const winRate = stats.tradeCount > 0 
-    ? Math.round((stats.winCount / stats.tradeCount) * 100) 
-    : 100;
+  const winRate = stats.tradeCount > 0 ? Math.round((stats.winCount / stats.tradeCount) * 100) : 100;
 
   return (
     <div
