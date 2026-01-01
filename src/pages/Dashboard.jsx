@@ -13,7 +13,6 @@ const Dashboard = () => {
   const { data: allTrades = [], isLoading } = useTrades();
   const { data: tags = [], isLoading: tagsLoading } = useTags();
   const currency = useSettingsStore(state => state.settings.currency);
-  const startingBalance = useSettingsStore(state => state.settings.startingBalance || 0);
   
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -50,7 +49,6 @@ const Dashboard = () => {
   const avgLoser = losers.length > 0 ? losers.reduce((sum, t) => sum + t.amount, 0) / losers.length : 0;
   const bestTrade = trades.length > 0 ? Math.max(...trades.map(t => t.amount)) : 0;
   const worstTrade = trades.length > 0 ? Math.min(...trades.map(t => t.amount)) : 0;
-  const accountBalance = startingBalance + totalPL;
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const chartData = yearlyStats.map(m => ({ month: monthNames[m.month], pl: m.totalPL }));
@@ -84,19 +82,15 @@ const Dashboard = () => {
           </button>
         </div>
         
-        {/* TOP STATS ROW */}
-        <div className="grid grid-cols-4 gap-6">
-          <StatCard 
-            label="Account Balance"
-            value={formatFullCurrency(accountBalance, currency)}
-            trend={accountBalance >= startingBalance ? 'up' : 'down'}
-            icon={<TrendingUp className="w-6 h-6" />}
-          />
+        {/* TOP STATS ROW - 3 CARDS */}
+        <div className="grid grid-cols-3 gap-6">
           <StatCard 
             label="Total P&L"
             value={formatCompactCurrency(totalPL, currency)}
             trend={totalPL >= 0 ? 'up' : 'down'}
             subtitle={`${selectedYear} YTD`}
+            showMiniChart
+            chartData={yearlyStats.map(m => m.totalPL)}
           />
           <StatCard 
             label="Win Rate"
@@ -214,8 +208,9 @@ const calculateTagPerformance = (trades, tags) => {
     .sort((a, b) => b.totalPL - a.totalPL);
 };
 
-const StatCard = ({ label, value, trend, subtitle, icon }) => {
+const StatCard = ({ label, value, trend, subtitle, icon, showMiniChart, chartData }) => {
   const trendColor = trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-slate-400';
+  
   return (
     <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all">
       <div className="flex flex-col items-center text-center">
@@ -225,6 +220,27 @@ const StatCard = ({ label, value, trend, subtitle, icon }) => {
         </div>
         <p className={`text-3xl font-black ${trendColor} mb-1`}>{value}</p>
         {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+        
+        {/* Mini Chart */}
+        {showMiniChart && chartData && (
+          <div className="w-full h-12 mt-4">
+            <svg viewBox="0 0 100 40" className="w-full h-full" preserveAspectRatio="none">
+              <polyline
+                points={chartData.map((val, i) => {
+                  const x = (i / (chartData.length - 1)) * 100;
+                  const max = Math.max(...chartData.map(Math.abs));
+                  const y = 20 - (val / (max || 1)) * 15;
+                  return `${x},${y}`;
+                }).join(' ')}
+                fill="none"
+                stroke={trend === 'up' ? '#10b981' : '#ef4444'}
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
+              <line x1="0" y1="20" x2="100" y2="20" stroke="#475569" strokeWidth="0.5" />
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );
