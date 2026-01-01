@@ -6,7 +6,6 @@ import { Loading } from '@/components/shared/Loading';
 import { calculateYearlyStats, formatCompactCurrency } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,30 +46,28 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col">
-      {/* TOP SECTION - Compact, no wasted space */}
-      <div className="pt-20 px-3 pb-2">
+    <div className="h-screen overflow-hidden flex flex-col" style={{ paddingTop: '80px' }}>
+      {/* TOP SECTION */}
+      <div className="px-3 pb-2">
         <div className="grid grid-cols-12 gap-2">
           
-          {/* Win Rate + Trades */}
-          <div className="col-span-2 card p-3 flex items-center gap-3">
+          {/* Win Rate + Trades - CENTERED */}
+          <div className="col-span-2 card p-3 flex flex-col items-center justify-center">
             <WinRateDonut winRate={overallWinRate} />
-            <div>
-              <div className="text-xs text-slate-400">Trades</div>
-              <div className="text-2xl font-black">{totalTrades}</div>
-            </div>
+            <div className="text-xs text-slate-400 mt-2">Trades</div>
+            <div className="text-2xl font-black">{totalTrades}</div>
           </div>
 
-          {/* Account Balance */}
-          <div className="col-span-2 card p-3">
+          {/* Account Balance - CENTERED */}
+          <div className="col-span-2 card p-3 flex flex-col items-center justify-center">
             <div className="text-xs text-slate-400 mb-1">ACCOUNT</div>
             <div className={`text-2xl font-black ${accountBalance >= startingBalance ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCompactCurrency(accountBalance, currency)}
             </div>
           </div>
 
-          {/* Yearly P&L */}
-          <div className="col-span-2 card p-3">
+          {/* Yearly P&L - CENTERED */}
+          <div className="col-span-2 card p-3 flex flex-col items-center justify-center">
             <div className="text-xs text-slate-400 mb-1">YEARLY P&L</div>
             <div className={`text-2xl font-black ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCompactCurrency(totalPL, currency)}
@@ -79,38 +76,36 @@ const Dashboard = () => {
 
           {/* Strategy Performance */}
           <div className="col-span-6 card p-3">
-            <div className="text-xs text-slate-400 mb-2 uppercase tracking-wider">Strategy Performance</div>
+            <div className="text-xs text-slate-400 mb-2 uppercase tracking-wider text-center">Strategy Performance</div>
             {tagPerformance.length > 0 ? (
-              <div className="flex gap-4">
+              <div className="flex gap-4 justify-center">
                 {tagPerformance.map(tag => (
-                  <div key={tag.tagId} className="flex items-center gap-2 flex-1">
-                    <span className="text-2xl">{tag.tagEmoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold truncate" style={{ color: tag.tagColor }}>
-                        {tag.tagName}
-                      </div>
-                      <div className={`text-xl font-black ${tag.totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {formatCompactCurrency(tag.totalPL, currency)}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        {tag.trades}T • {tag.winRate}% WR
-                      </div>
+                  <div key={tag.tagId} className="flex flex-col items-center">
+                    <span className="text-2xl mb-1">{tag.tagEmoji}</span>
+                    <div className="text-sm font-bold" style={{ color: tag.tagColor }}>
+                      {tag.tagName}
+                    </div>
+                    <div className={`text-xl font-black ${tag.totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {formatCompactCurrency(tag.totalPL, currency)}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      {tag.trades}T • {tag.winRate}% WR
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-slate-500 text-sm">No tagged trades</div>
+              <div className="text-slate-500 text-sm text-center">No tagged trades</div>
             )}
           </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT - Chart + Tiles + Sidebar */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 px-3 pb-3 min-h-0">
         <div className="h-full grid grid-cols-12 gap-2">
           
-          {/* LEFT SIDEBAR - Metrics */}
+          {/* LEFT SIDEBAR - ALL CENTERED */}
           <div className="col-span-2 card p-3 flex flex-col justify-around">
             <Metric label="AVG WINNER" value={formatCompactCurrency(avgWinner, currency)} color="profit" />
             <Metric label="AVG LOSER" value={formatCompactCurrency(avgLoser, currency)} color="loss" />
@@ -118,7 +113,7 @@ const Dashboard = () => {
             <Metric label="WORST" value={formatCompactCurrency(worstTrade, currency)} color="loss" />
           </div>
 
-          {/* CENTER - Chart + Monthly Tiles */}
+          {/* CENTER */}
           <div className="col-span-10 flex flex-col gap-2 min-h-0">
             
             {/* Chart */}
@@ -150,7 +145,6 @@ const Dashboard = () => {
                     stats={m}
                     isCurrentMonth={m.month === currentMonth}
                     onClick={() => navigate(`/month/${currentYear}/${m.month}`)}
-                    currency={currency}
                   />
                 ))}
               </div>
@@ -184,7 +178,7 @@ const calculateTagPerformance = (trades, tags) => {
 };
 
 const Metric = ({ label, value, color }) => (
-  <div className="text-center">
+  <div className="text-center flex flex-col items-center justify-center">
     <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
     <div className={`text-xl font-black ${color === 'profit' ? 'text-emerald-400' : 'text-red-400'}`}>{value}</div>
   </div>
@@ -211,18 +205,41 @@ const WinRateDonut = ({ winRate }) => {
 };
 
 const MonthTile = ({ month, stats, isCurrentMonth, onClick }) => {
-  const wr = stats.tradeCount > 0 ? Math.round((stats.winCount / stats.tradeCount) * 100) : 100;
+  // FIX: 0% when no trades, not 100%
+  const wr = stats.tradeCount > 0 ? Math.round((stats.winCount / stats.tradeCount) * 100) : 0;
+  const hasData = stats.tradeCount > 0;
+  
   return (
     <div onClick={onClick} className={`bg-slate-800/30 rounded-lg p-2 cursor-pointer hover:bg-slate-800/50 transition-all flex flex-col items-center justify-center ${isCurrentMonth ? 'ring-2 ring-blue-500' : ''}`}>
       <div className="text-xs text-slate-400 font-semibold mb-2">{month}</div>
       <div className="relative w-12 h-12">
         <svg viewBox="0 0 36 36" className="transform -rotate-90">
+          {/* Background circle */}
           <circle cx="18" cy="18" r="14" fill="none" stroke="#1e293b" strokeWidth="2.5" />
-          {wr > 0 && <circle cx="18" cy="18" r="14" fill="none" stroke="#10b981" strokeWidth="2.5" strokeDasharray={`${(wr/100) * 88} 88`} />}
-          {wr < 100 && <circle cx="18" cy="18" r="14" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeDasharray={`${((100-wr)/100) * 88} 88`} strokeDashoffset={`${-(wr/100) * 88}`} />}
+          
+          {/* If has data, show win/loss colors */}
+          {hasData && (
+            <>
+              {wr > 0 && (
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#10b981" strokeWidth="2.5" 
+                  strokeDasharray={`${(wr/100) * 88} 88`} />
+              )}
+              {wr < 100 && (
+                <circle cx="18" cy="18" r="14" fill="none" stroke="#ef4444" strokeWidth="2.5" 
+                  strokeDasharray={`${((100-wr)/100) * 88} 88`} 
+                  strokeDashoffset={`${-(wr/100) * 88}`} />
+              )}
+            </>
+          )}
+          
+          {/* If NO data, show gray circle */}
+          {!hasData && (
+            <circle cx="18" cy="18" r="14" fill="none" stroke="#475569" strokeWidth="2.5" 
+              strokeDasharray="88 88" />
+          )}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[10px] font-bold">{wr}%</span>
+          <span className={`text-[10px] font-bold ${!hasData ? 'text-slate-600' : ''}`}>{wr}%</span>
         </div>
       </div>
       <div className="text-[10px] text-slate-500 mt-1">{stats.tradeCount}T</div>
