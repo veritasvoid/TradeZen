@@ -93,7 +93,8 @@ class GoogleAPIClient {
       clearTimeout(this.refreshTimer);
     }
     
-    const refreshInterval = 50 * 60 * 1000;
+    // Refresh token every 55 minutes (Google tokens last 60 min)
+    const refreshInterval = 55 * 60 * 1000;
     
     this.refreshTimer = setTimeout(() => {
       console.log('🔄 Auto-refreshing token...');
@@ -102,7 +103,7 @@ class GoogleAPIClient {
       });
     }, refreshInterval);
     
-    console.log('⏰ Token refresh scheduled for 50 minutes from now');
+    console.log('⏰ Token refresh scheduled for 55 minutes from now');
   }
 
   async signIn() {
@@ -119,13 +120,44 @@ class GoogleAPIClient {
           
           this.accessToken = resp.access_token;
           window.gapi.client.setToken({ access_token: this.accessToken });
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, this.accessToken);
+          
+          // Store token with timestamp
+          const tokenData = {
+            token: this.accessToken,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, JSON.stringify(tokenData));
           
           console.log('✅ Signed in successfully');
           this.scheduleTokenRefresh();
           resolve(resp);
         };
 
+        // Check for existing token
+        const savedTokenData = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        
+        if (savedTokenData) {
+          try {
+            const { token, timestamp } = JSON.parse(savedTokenData);
+            const age = Date.now() - timestamp;
+            
+            // Token is valid for 60 minutes, use if < 50 min old
+            if (age < 50 * 60 * 1000) {
+              console.log('🔑 Using saved token (age:', Math.round(age / 60000), 'min)');
+              this.accessToken = token;
+              window.gapi.client.setToken({ access_token: token });
+              this.scheduleTokenRefresh();
+              resolve({ access_token: token });
+              return;
+            } else {
+              console.log('⏰ Token expired (age:', Math.round(age / 60000), 'min), requesting new sign-in');
+            }
+          } catch (e) {
+            console.log('Invalid token data, requesting fresh sign-in');
+          }
+        }
+
+        // Request fresh sign-in
         console.log('🔑 Requesting Google sign-in...');
         this.tokenClient.requestAccessToken({ prompt: 'consent' });
         
