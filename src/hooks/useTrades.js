@@ -45,11 +45,30 @@ const fetchTrades = async () => {
 
 // Fetch trades for specific month
 const fetchMonthTrades = async (year, month) => {
+  console.log(`📅 Fetching trades for: ${year}-${month} (month is 0-indexed, so ${month} = ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month]})`);
+  
   const allTrades = await fetchTrades();
-  return allTrades.filter(trade => {
+  console.log(`📊 Total trades in sheet: ${allTrades.length}`);
+  
+  if (allTrades.length > 0) {
+    console.log('📋 All trade dates:', allTrades.map(t => t.date));
+  }
+  
+  const filtered = allTrades.filter(trade => {
     const [tradeYear, tradeMonth] = trade.date.split('-').map(Number);
-    return tradeYear === year && tradeMonth === month + 1;
+    const matches = tradeYear === year && tradeMonth === month + 1;
+    
+    if (!matches) {
+      console.log(`  ❌ Trade ${trade.date} doesn't match: tradeYear=${tradeYear} vs ${year}, tradeMonth=${tradeMonth} vs ${month + 1}`);
+    } else {
+      console.log(`  ✅ Trade ${trade.date} MATCHES!`);
+    }
+    
+    return matches;
   });
+  
+  console.log(`✅ Filtered to ${filtered.length} trades for ${year}-${month + 1}`);
+  return filtered;
 };
 
 // Add trade
