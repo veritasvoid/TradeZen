@@ -199,7 +199,10 @@ const updateTrade = async ({ tradeId, updates }) => {
 
 // Delete trade
 const deleteTrade = async (tradeId) => {
-  const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
+  // FIX #5: Use hardcoded sheet ID
+  const sheetId = '1ruzm5D-ofifAU7d5oRChBT7DAYFTlVLgULSsXvYEtXU';
+  
+  console.log('🗑️ Deleting trade:', tradeId);
   
   // Find row index
   const response = await window.gapi.client.sheets.spreadsheets.values.get({
@@ -214,14 +217,24 @@ const deleteTrade = async (tradeId) => {
     throw new Error('Trade not found');
   }
 
-  // Delete row
+  console.log('📍 Found trade at row:', rowIndex);
+
+  // Get the actual sheet ID (not spreadsheet ID)
+  const sheetMetadata = await window.gapi.client.sheets.spreadsheets.get({
+    spreadsheetId: sheetId
+  });
+  
+  const tradesSheet = sheetMetadata.result.sheets.find(s => s.properties.title === SHEETS.TRADES);
+  const tradesSheetId = tradesSheet.properties.sheetId;
+
+  // Delete row using correct sheetId
   await window.gapi.client.sheets.spreadsheets.batchUpdate({
     spreadsheetId: sheetId,
     resource: {
       requests: [{
         deleteDimension: {
           range: {
-            sheetId: 0,
+            sheetId: tradesSheetId, // FIX: Use actual sheet ID, not 0
             dimension: 'ROWS',
             startIndex: rowIndex,
             endIndex: rowIndex + 1
@@ -230,6 +243,8 @@ const deleteTrade = async (tradeId) => {
       }]
     }
   });
+  
+  console.log('✅ Trade deleted successfully');
 };
 
 // Custom hooks
