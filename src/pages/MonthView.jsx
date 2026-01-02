@@ -57,29 +57,12 @@ const MonthView = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" style={{ paddingTop: '80px' }}>
-      {/* HEADER WITH LOGO */}
-      <div className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm px-6 py-4">
-        <div className="max-w-[1800px] mx-auto flex items-center justify-between">
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          >
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-              <TrendingUp size={24} className="text-white" />
-            </div>
-            <span className="text-2xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              TradeZen
-            </span>
-          </button>
-
-          <h1 className="text-2xl font-black">{monthNames[currentMonth]} {currentYear}</h1>
-
-          <div className="w-10 h-10" /> {/* Spacer */}
-        </div>
-      </div>
-
-      <div className="max-w-[1800px] mx-auto p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="max-w-[1800px] mx-auto p-6 pt-6">{/* Just normal padding, no header */}
+        
+        {/* Month Title */}
+        <h1 className="text-3xl font-black text-center mb-6">{monthNames[currentMonth]} {currentYear}</h1>
+        
         <div className="grid grid-cols-12 gap-6">
           
           {/* CALENDAR - 9 cols */}
