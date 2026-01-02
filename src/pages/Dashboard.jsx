@@ -215,28 +215,28 @@ const MonthTile = ({ month, stats, isCurrentMonth, onClick }) => {
     <div onClick={onClick} className={`relative bg-slate-800/30 rounded-lg p-2 cursor-pointer hover:bg-slate-800/50 transition-all flex flex-col items-center justify-center ${isCurrentMonth ? 'ring-2 ring-blue-500' : ''}`}>
       <div className="text-xs text-slate-400 font-semibold mb-2">{month}</div>
       
-      {/* Larger Donut - 56px */}
-      <div className="relative w-14 h-14">
+      {/* LARGER Donut - 70px (was 56px) */}
+      <div className="relative w-[70px] h-[70px]">
         <svg viewBox="0 0 36 36" className="transform -rotate-90">
-          <circle cx="18" cy="18" r="15" fill="none" stroke="#1e293b" strokeWidth="3" />
+          <circle cx="18" cy="18" r="16" fill="none" stroke="#1e293b" strokeWidth="3.5" />
           {hasData && (
             <>
-              {wr > 0 && <circle cx="18" cy="18" r="15" fill="none" stroke="#10b981" strokeWidth="3" strokeDasharray={`${(wr/100) * 94} 94`} />}
-              {wr < 100 && <circle cx="18" cy="18" r="15" fill="none" stroke="#ef4444" strokeWidth="3" strokeDasharray={`${((100-wr)/100) * 94} 94`} strokeDashoffset={`${-(wr/100) * 94}`} />}
+              {wr > 0 && <circle cx="18" cy="18" r="16" fill="none" stroke="#10b981" strokeWidth="3.5" strokeDasharray={`${(wr/100) * 100} 100`} />}
+              {wr < 100 && <circle cx="18" cy="18" r="16" fill="none" stroke="#ef4444" strokeWidth="3.5" strokeDasharray={`${((100-wr)/100) * 100} 100`} strokeDashoffset={`${-(wr/100) * 100}`} />}
             </>
           )}
-          {!hasData && <circle cx="18" cy="18" r="15" fill="none" stroke="#475569" strokeWidth="3" />}
+          {!hasData && <circle cx="18" cy="18" r="16" fill="none" stroke="#475569" strokeWidth="3.5" />}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          {/* Larger % text */}
-          <span className={`text-xs font-black ${!hasData ? 'text-slate-600' : ''}`}>{wr}%</span>
+          {/* LARGER % text - text-sm (was text-xs) */}
+          <span className={`text-sm font-black ${!hasData ? 'text-slate-600' : ''}`}>{wr}%</span>
         </div>
       </div>
       
       {/* Trade Count Badge - Bottom Right Corner */}
       {hasData && (
-        <div className="absolute bottom-2 right-2 w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg border border-slate-700">
-          <span className="text-[10px] font-black text-white">{stats.tradeCount}</span>
+        <div className="absolute bottom-2 right-2 w-7 h-7 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg border border-slate-700">
+          <span className="text-[11px] font-black text-white">{stats.tradeCount}</span>
         </div>
       )}
     </div>
