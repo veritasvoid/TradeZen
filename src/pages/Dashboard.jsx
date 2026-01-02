@@ -18,11 +18,9 @@ const Dashboard = () => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   
-  // Year selector state
   const [selectedYear, setSelectedYear] = React.useState(currentYear);
   const maxYear = currentYear;
   
-  // Filter trades by selected year
   const trades = allTrades.filter(trade => {
     const tradeYear = parseInt(trade.date.split('-')[0]);
     return tradeYear === selectedYear;
@@ -67,17 +65,19 @@ const Dashboard = () => {
       <TopNav selectedYear={selectedYear} onYearChange={setSelectedYear} maxYear={maxYear} />
       
       <div className="h-screen overflow-hidden flex flex-col pt-20">
-        {/* TOP SECTION */}
         <div className="px-3 pb-2">
           <div className="grid grid-cols-12 gap-2">
             
-            {/* Win Rate + Trades */}
-            <div className="col-span-2 card p-3 flex items-center justify-center gap-3">
+            {/* Win Rate - SOLO BOX */}
+            <div className="col-span-1 card p-3 flex flex-col items-center justify-center">
+              <div className="text-xs text-slate-400 mb-2">WIN RATE</div>
               <WinRateDonut winRate={overallWinRate} />
-              <div className="text-center">
-                <div className="text-xs text-slate-400">Trades</div>
-                <div className="text-2xl font-black">{totalTrades}</div>
-              </div>
+            </div>
+
+            {/* Trades - SOLO BOX */}
+            <div className="col-span-1 card p-3 flex flex-col items-center justify-center">
+              <div className="text-xs text-slate-400 mb-1">TRADES</div>
+              <div className="text-3xl font-black">{totalTrades}</div>
             </div>
 
             {/* Account Balance */}
@@ -125,11 +125,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* MAIN CONTENT */}
         <div className="flex-1 px-3 pb-3 min-h-0">
           <div className="h-full grid grid-cols-12 gap-2">
             
-            {/* LEFT SIDEBAR */}
+            {/* LEFT SIDEBAR - BIGGER FONT, CENTERED */}
             <div className="col-span-2 card p-3 flex flex-col justify-around">
               <Metric label="AVG WINNER" value={formatCompactCurrency(avgWinner, currency)} color="profit" />
               <Metric label="AVG LOSER" value={formatCompactCurrency(avgLoser, currency)} color="loss" />
@@ -137,7 +136,6 @@ const Dashboard = () => {
               <Metric label="WORST" value={formatCompactCurrency(worstTrade, currency)} color="loss" />
             </div>
 
-            {/* CENTER */}
             <div className="col-span-10 flex flex-col gap-2 min-h-0">
               
               {/* Chart */}
@@ -202,10 +200,11 @@ const calculateTagPerformance = (trades, tags) => {
     .sort((a, b) => b.totalPL - a.totalPL);
 };
 
+// BIGGER FONT, CENTERED IN ALL DIRECTIONS
 const Metric = ({ label, value, color }) => (
-  <div className="text-center">
-    <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-    <div className={`text-xl font-black ${color === 'profit' ? 'text-emerald-400' : 'text-red-400'}`}>{value}</div>
+  <div className="flex flex-col items-center justify-center h-full">
+    <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">{label}</div>
+    <div className={`text-3xl font-black ${color === 'profit' ? 'text-emerald-400' : 'text-red-400'}`}>{value}</div>
   </div>
 );
 
