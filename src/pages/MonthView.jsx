@@ -250,19 +250,19 @@ const DayCell = ({ day, trades, dayPL, isToday, currency, onClick, onEditTrade }
             {formatCompactCurrency(dayPL, currency)}
           </div>
 
-          {/* Tags - bottom-left */}
-          <div className="absolute bottom-1 left-1 flex flex-wrap gap-1 max-w-[80%]">
+          {/* Tags - bottom-left - MORE VISIBLE */}
+          <div className="absolute bottom-1 left-1 flex flex-wrap gap-1 max-w-[65%]">
             {[...new Set(trades.map(t => t.tagName).filter(Boolean))].map(tagName => (
-              <span key={tagName} className="text-[8px] text-slate-400 bg-slate-900/70 px-1 rounded truncate">
+              <span key={tagName} className="text-[9px] text-slate-200 bg-slate-800/90 px-1.5 py-0.5 rounded font-semibold truncate border border-slate-700/50">
                 {tagName}
               </span>
             ))}
           </div>
 
-          {/* Trade count - bottom-right (only if > 1) */}
-          {trades.length > 1 && (
-            <div className="absolute bottom-1 right-1 text-[9px] text-slate-500 font-semibold">
-              {trades.length}
+          {/* Trade count badge - bottom-right - CIRCULAR LIKE DASHBOARD */}
+          {trades.length > 0 && (
+            <div className="absolute bottom-1 right-1 w-5 h-5 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg border border-slate-700">
+              <span className="text-[9px] font-black text-white">{trades.length}</span>
             </div>
           )}
 
