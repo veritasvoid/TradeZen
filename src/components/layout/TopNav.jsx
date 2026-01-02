@@ -77,18 +77,20 @@ export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
               </div>
             )}
 
-            {/* Nav Buttons with 3D effect */}
+            {/* Nav Buttons - Hide Month button if on month page */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/month')}
-                className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold border shadow-lg hover:scale-105 ${
-                  isActive('/month') 
-                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 border-blue-500/50 shadow-blue-900/50 text-white' 
-                    : 'bg-gradient-to-br from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border-slate-700/50'
-                }`}
-              >
-                Month
-              </button>
+              {!location.pathname.startsWith('/month') && (
+                <button
+                  onClick={() => navigate('/month')}
+                  className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold border shadow-lg hover:scale-105 ${
+                    isActive('/month') 
+                      ? 'bg-gradient-to-br from-blue-600 to-purple-600 border-blue-500/50 shadow-blue-900/50 text-white' 
+                      : 'bg-gradient-to-br from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border-slate-700/50'
+                  }`}
+                >
+                  Month
+                </button>
+              )}
               <button
                 onClick={() => navigate('/tags')}
                 className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold border shadow-lg hover:scale-105 ${
