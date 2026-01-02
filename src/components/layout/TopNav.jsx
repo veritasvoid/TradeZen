@@ -1,105 +1,113 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, Tag, Settings, TrendingUp } from 'lucide-react';
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { TrendingUp, LogOut } from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
 
-const navItems = [
-  { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/month', icon: Calendar, label: 'Month' },
-  { path: '/tags', icon: Tag, label: 'Tags' },
-  { path: '/settings', icon: Settings, label: 'Settings' }
-];
-
-export const TopNav = () => {
+export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const [isVisible, setIsVisible] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const signOut = useAuthStore(state => state.signOut);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    
-    const handleMouseMove = (e) => {
-      // Show nav when mouse is in top 100px of screen
-      if (e.clientY < 100) {
-        setIsVisible(true);
-      } else if (e.clientY > 150) {
-        setIsVisible(false);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
+  const handleSignOut = () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      signOut();
+      navigate('/');
+    }
+  };
+
+  const isActive = (path) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <nav 
-      className={`
-        fixed top-0 left-0 right-0 z-50 transition-all duration-300
-        ${isVisible || scrolled ? 'translate-y-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50 shadow-xl' : '-translate-y-full bg-transparent'}
-      `}
-    >
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-20">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-sm">
+      <div className="max-w-[1800px] mx-auto px-6 py-3">
+        <div className="flex items-center justify-between">
+          
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl blur-md opacity-75 group-hover:opacity-100 transition-opacity" />
-              <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-2.5 rounded-xl">
-                <TrendingUp size={28} className="text-white" strokeWidth={2.5} />
-              </div>
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+              <TrendingUp size={20} className="text-white" />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent tracking-tight">
-                TradeZen
-              </h1>
-              <span className="text-xs text-slate-400 font-medium -mt-1">Trading Journal</span>
-            </div>
-          </Link>
+            <span className="text-xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              TradeZen
+            </span>
+          </button>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-2">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path || 
-                (item.path === '/month' && location.pathname.startsWith('/month/'));
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`
-                    relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl
-                    font-semibold text-sm transition-all duration-200
-                    ${isActive 
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105' 
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                    }
-                  `}
+          {/* Right Side: Year + Nav + Logout */}
+          <div className="flex items-center gap-4">
+            
+            {/* Year Selector (only show if provided) */}
+            {selectedYear && onYearChange && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onYearChange(selectedYear - 1)}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-sm font-semibold"
                 >
-                  <Icon size={18} strokeWidth={2.5} />
-                  <span className="hidden sm:inline">{item.label}</span>
-                  {isActive && (
-                    <div className="absolute inset-0 bg-white/10 rounded-xl" />
-                  )}
-                </Link>
-              );
-            })}
+                  ← {selectedYear - 1}
+                </button>
+                
+                <div className="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                  <span className="text-lg font-black">{selectedYear}</span>
+                </div>
+                
+                <button
+                  onClick={() => onYearChange(selectedYear + 1)}
+                  disabled={selectedYear >= maxYear}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all text-sm font-semibold"
+                >
+                  {selectedYear + 1} →
+                </button>
+              </div>
+            )}
+
+            {/* Nav Buttons - NO DASHBOARD */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/month')}
+                className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold ${
+                  isActive('/month') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
+                    : 'bg-slate-800 hover:bg-slate-700'
+                }`}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => navigate('/tags')}
+                className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold ${
+                  isActive('/tags') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
+                    : 'bg-slate-800 hover:bg-slate-700'
+                }`}
+              >
+                Tags
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold ${
+                  isActive('/settings') 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
+                    : 'bg-slate-800 hover:bg-slate-700'
+                }`}
+              >
+                Settings
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors ml-2"
+                title="Sign out"
+              >
+                <LogOut size={18} className="text-slate-400" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Hover indicator */}
-      {!isVisible && !scrolled && (
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full">
-          <div className="w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-b-lg opacity-50" />
-        </div>
-      )}
-    </nav>
+    </div>
   );
 };
