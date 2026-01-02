@@ -123,23 +123,6 @@ const MonthView = () => {
                 })}
               </div>
             </div>
-
-            {/* TRADE LIST BELOW CALENDAR */}
-            {trades.length > 0 && (
-              <div className="mt-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <h3 className="text-lg font-bold mb-4 text-center">All Trades This Month</h3>
-                <div className="space-y-2">
-                  {trades.map(trade => (
-                    <TradeRow
-                      key={trade.tradeId}
-                      trade={trade}
-                      currency={currency}
-                      onEdit={() => handleEditTrade(trade)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* STATS SIDEBAR - 3 cols */}
@@ -271,61 +254,6 @@ const DayCell = ({ day, trades, dayPL, isToday, currency, onClick, onEditTrade }
           <div className="absolute inset-0" />
         </>
       )}
-    </div>
-  );
-};
-
-// Trade row in list
-const TradeRow = ({ trade, currency, onEdit }) => {
-  const deleteTrade = useDeleteTrade();
-
-  const handleDelete = async () => {
-    if (!confirm('Delete this trade?')) return;
-    try {
-      await deleteTrade.mutateAsync(trade.tradeId);
-    } catch (error) {
-      alert('Failed to delete: ' + error.message);
-    }
-  };
-
-  return (
-    <div className="bg-slate-800/30 rounded-lg p-4 flex items-center gap-4 hover:bg-slate-800/50 transition-all group">
-      <div className="flex-shrink-0">
-        <div className="text-xs text-slate-500">{trade.time}</div>
-      </div>
-
-      <div className="flex-1">
-        {trade.tagName && (
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm">{trade.tagEmoji}</span>
-            <span className="text-xs font-semibold" style={{ color: trade.tagColor }}>
-              {trade.tagName}
-            </span>
-          </div>
-        )}
-        {trade.notes && (
-          <div className="text-xs text-slate-400 truncate">{trade.notes}</div>
-        )}
-      </div>
-
-      <div className={`text-xl font-black ${trade.amount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-        {formatCompactCurrency(trade.amount, currency)}
-      </div>
-
-      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={onEdit}
-          className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
-        >
-          <Edit size={16} />
-        </button>
-        <button
-          onClick={handleDelete}
-          className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
     </div>
   );
 };
