@@ -10,17 +10,40 @@ import { useSettingsStore } from '@/stores/settingsStore';
 const MonthView = () => {
   const { year: yearParam, month: monthParam } = useParams();
   const navigate = useNavigate();
-  
   const currentDate = new Date();
-  const currentYear = yearParam ? parseInt(yearParam) : currentDate.getFullYear();
+  const currentYear = parseInt(yearParam) || currentDate.getFullYear();
   const currentMonth = monthParam !== undefined ? parseInt(monthParam) : currentDate.getMonth();
-
+  
   const { data: trades = [], isLoading } = useMonthTrades(currentYear, currentMonth);
-  const { data: tags = [], isLoading: tagsLoading } = useTags();
+  const { data: tags = [] } = useTags();
   const currency = useSettingsStore(state => state.settings.currency);
 
-  const [showTradeEditModal, setShowTradeEditModal] = useState(false);
-  const [editingTrade, setEditingTrade] = useState(null);
+  const [selectedTrade, setSelectedTrade] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+
+  // Calculate month stats
+  const totalPL = trades.reduce((sum, t) => sum + t.amount, 0);
+  const winners = trades.filter(t => t.amount > 0);
+  const losers = trades.filter(t => t.amount < 0);
+  const winRate = trades.length > 0 ? Math.round((winners.length / trades.length) * 100) : 0;
+
+  // Tag performance for this month
+  const tagPerformance = calculateMonthTagPerformance(trades);
+
+  // Organize trades by day
+  const tradesByDay = {};
+  trades.forEach(trade => {
+    const day = parseInt(trade.date.split('-')[2]);
+    if (!tradesByDay[day]) tradesByDay[day] = [];
+    tradesByDay[day].push(trade);
+  });
+
   const [showDayTradesModal, setShowDayTradesModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -30,37 +53,16 @@ const MonthView = () => {
   };
 
   const handleEditTrade = (trade) => {
-    setEditingTrade(trade);
-    setShowTradeEditModal(true);
+    setSelectedTrade(trade);
+    setShowEditModal(true);
   };
-
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-
-  const tradesByDay = {};
-  trades.forEach(trade => {
-    const day = parseInt(trade.date.split('-')[2]);
-    if (!tradesByDay[day]) tradesByDay[day] = [];
-    tradesByDay[day].push(trade);
-  });
-
-  const totalPL = trades.reduce((sum, t) => sum + t.amount, 0);
-  const winners = trades.filter(t => t.amount > 0);
-  const losers = trades.filter(t => t.amount < 0);
-  const winRate = trades.length > 0 ? Math.round((winners.length / trades.length) * 100) : 0;
-
-  const tagPerformance = calculateMonthTagPerformance(trades, tags);
-
-  if (isLoading || tagsLoading) return <div className="p-6 pt-20">Loading...</div>;
 
   return (
     <>
       <TopNav />
       
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="max-w-[1800px] mx-auto p-6 pt-20">
+        <div className="max-w-[1800px] mx-auto p-6 pt-20">{/* pt-20 for TopNav */}
         
         {/* Month Title with UPGRADED Navigation */}
         <div className="flex items-center justify-center gap-4 mb-6">
@@ -98,6 +100,7 @@ const MonthView = () => {
           {/* CALENDAR - 9 cols */}
           <div className="col-span-9">
             <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+              {/* Days of week header */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                   <div key={day} className="text-center text-slate-400 text-sm font-semibold py-2">
@@ -106,6 +109,7 @@ const MonthView = () => {
                 ))}
               </div>
 
+              {/* Calendar grid */}
               <div className="grid grid-cols-7 gap-2">
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => (
                   <div key={`empty-${i}`} className="aspect-square" />
@@ -184,9 +188,19 @@ const MonthView = () => {
               </div>
             )}
           </div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        {tag.trades}T • {tag.winRate}% WR
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* MODALS */}
       {showDayTradesModal && selectedDay && (
         <DayTradesModal
           day={selectedDay}
@@ -203,79 +217,51 @@ const MonthView = () => {
         />
       )}
 
-      {showTradeEditModal && editingTrade && (
+      {showEditModal && selectedTrade && (
         <TradeEditModal
-          trade={editingTrade}
+          trade={selectedTrade}
           tags={tags}
           currency={currency}
           onClose={() => {
-            setShowTradeEditModal(false);
-            setEditingTrade(null);
+            setShowEditModal(false);
+            setSelectedTrade(null);
           }}
         />
       )}
+
+      {showAddModal && (
+        <TradeAddModal
+          date={selectedDate}
+          tags={tags}
+          currency={currency}
+          onClose={() => {
+            setShowAddModal(false);
+            setSelectedDate(null);
+          }}
+        />
+      )}
+    </div>
     </>
   );
 };
 
-// COMPACT STAT component
-const CompactStat = ({ label, value, color }) => {
-  const colorClass = color === 'emerald' ? 'text-emerald-400' : color === 'red' ? 'text-red-400' : 'text-slate-200';
-  
-  return (
-    <div className="bg-slate-800/30 rounded-lg p-2 text-center">
-      <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-      <div className={`text-base font-black ${colorClass}`}>{value}</div>
-    </div>
-  );
-};
-
-// Win Rate Donut Chart - FIXED for medium size
-const WinRateDonut = ({ winRate, size = 'normal' }) => {
-  const dimensions = size === 'large' 
-    ? { w: 120, h: 120, r: 50, stroke: 12, text: 'text-4xl' }
-    : size === 'medium'
-    ? { w: 90, h: 90, r: 38, stroke: 10, text: 'text-3xl' }
-    : { w: 64, h: 64, r: 28, stroke: 10, text: 'text-lg' };
-    
-  const circ = 2 * Math.PI * dimensions.r;
-  const win = winRate / 100;
-  const loss = 1 - win;
+// Day cell component
+const DayCell = ({ day, trades, dayPL, isToday, currency, onClick, onEditTrade }) => {
+  const hasData = trades.length > 0;
+  const bgColor = hasData 
+    ? (dayPL > 0 ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-red-900/20 border-red-500/30')
+    : 'bg-slate-800/20 border-slate-700/30';
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: dimensions.w, height: dimensions.h }}>
-      <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
-        <circle cx="50" cy="50" r={dimensions.r} fill="none" stroke="#1e293b" strokeWidth={dimensions.stroke} />
-        {winRate > 0 && (
-          <circle 
-            cx="50" 
-            cy="50" 
-            r={dimensions.r} 
-            fill="none" 
-            stroke="#10b981" 
-            strokeWidth={dimensions.stroke} 
-            strokeDasharray={`${win * circ} ${circ}`}
-          />
-        )}
-        {winRate < 100 && (
-          <circle 
-            cx="50" 
-            cy="50" 
-            r={dimensions.r} 
-            fill="none" 
-            stroke="#ef4444" 
-            strokeWidth={dimensions.stroke} 
-            strokeDasharray={`${loss * circ} ${circ}`} 
-            strokeDashoffset={`${-win * circ}`}
-          />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`font-black ${dimensions.text}`}>{winRate}%</span>
-      </div>
-    </div>
-  );
-};
+    <div 
+      onClick={onClick}
+      className={`aspect-square rounded-lg border ${bgColor} ${isToday ? 'ring-2 ring-blue-500' : ''} p-2 relative hover:bg-slate-700/30 transition-all cursor-pointer`}
+    >
+      <div className="text-sm font-semibold text-slate-300">{day}</div>
+
+      {hasData && (
+        <>
+          {/* P&L - CENTERED AND LARGER */}
           <div className={`absolute inset-0 flex items-center justify-center text-lg font-black ${dayPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {formatCompactCurrency(dayPL, currency)}
           </div>
@@ -903,6 +889,18 @@ const TradeAddModal = ({ date, tags, currency, onClose }) => {
           </div>
         </form>
       </div>
+    </div>
+  );
+};
+
+// COMPACT STAT component
+const CompactStat = ({ label, value, color }) => {
+  const colorClass = color === 'emerald' ? 'text-emerald-400' : color === 'red' ? 'text-red-400' : 'text-slate-200';
+  
+  return (
+    <div className="bg-slate-800/30 rounded-lg p-2 text-center">
+      <div className="text-[9px] text-slate-400 uppercase tracking-wider mb-1">{label}</div>
+      <div className={`text-base font-black ${colorClass}`}>{value}</div>
     </div>
   );
 };
