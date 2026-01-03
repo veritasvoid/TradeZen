@@ -122,6 +122,10 @@ const MonthView = () => {
                   const isToday = day === currentDate.getDate() && 
                                   currentMonth === currentDate.getMonth() && 
                                   currentYear === currentDate.getFullYear();
+                  
+                  // Calculate day of week (0 = Sunday, 6 = Saturday)
+                  const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
+                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
                   return (
                     <DayCell
@@ -130,6 +134,7 @@ const MonthView = () => {
                       trades={dayTrades}
                       dayPL={dayPL}
                       isToday={isToday}
+                      isWeekend={isWeekend}
                       currency={currency}
                       onClick={() => handleDayClick(day)}
                       onEditTrade={handleEditTrade}
@@ -146,7 +151,7 @@ const MonthView = () => {
               <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4 font-semibold text-center">Month Stats</h3>
               
               <div className="space-y-4">
-                <StatRow label="Total P&L" value={formatCompactCurrency(totalPL, currency)} color={totalPL >= 0 ? 'emerald' : 'red'} />
+                <StatRow label="Total P&L" value={`${currency}${totalPL.toLocaleString()}`} color={totalPL >= 0 ? 'emerald' : 'red'} />
                 <StatRow label="Trades" value={trades.length} />
                 <StatRow label="Winners" value={winners.length} color="emerald" />
                 <StatRow label="Losers" value={losers.length} color="red" />
@@ -170,7 +175,7 @@ const MonthView = () => {
                         </div>
                       </div>
                       <div className={`text-lg font-black ${tag.totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {formatCompactCurrency(tag.totalPL, currency)}
+                        {currency}{tag.totalPL.toLocaleString()}
                       </div>
                       <div className="text-[10px] text-slate-400 mt-1">
                         {tag.trades}T • {tag.winRate}% WR
@@ -230,24 +235,28 @@ const MonthView = () => {
 };
 
 // Day cell component
-const DayCell = ({ day, trades, dayPL, isToday, currency, onClick, onEditTrade }) => {
+const DayCell = ({ day, trades, dayPL, isToday, isWeekend, currency, onClick, onEditTrade }) => {
   const hasData = trades.length > 0;
+  
+  // Weekend/Market Closed styling - darker with blue tint
+  const weekendBg = isWeekend ? 'bg-blue-950/20 border-blue-900/30' : '';
+  
   const bgColor = hasData 
     ? (dayPL > 0 ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-red-900/20 border-red-500/30')
-    : 'bg-slate-800/20 border-slate-700/30';
+    : (isWeekend ? weekendBg : 'bg-slate-800/20 border-slate-700/30');
 
   return (
     <div 
       onClick={onClick}
       className={`aspect-square rounded-lg border ${bgColor} ${isToday ? 'ring-2 ring-blue-500' : ''} p-2 relative hover:bg-slate-700/30 transition-all cursor-pointer`}
     >
-      <div className="text-sm font-semibold text-slate-300">{day}</div>
+      <div className={`text-sm font-semibold ${isWeekend ? 'text-blue-400/60' : 'text-slate-300'}`}>{day}</div>
 
       {hasData && (
         <>
-          {/* P&L - CENTERED AND LARGER */}
+          {/* P&L - CENTERED AND LARGER - FULL AMOUNT */}
           <div className={`absolute inset-0 flex items-center justify-center text-lg font-black ${dayPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {formatCompactCurrency(dayPL, currency)}
+            {currency}{dayPL.toLocaleString()}
           </div>
 
           {/* Tags - BOTTOM-LEFT - Stacked 2x2 grid */}
@@ -334,7 +343,7 @@ const DayTradesModal = ({ day, year, month, trades, tags, currency, onClose, onE
                 </div>
 
                 <div className={`text-xl font-black ${trade.amount >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {formatCompactCurrency(trade.amount, currency)}
+                  {currency}{trade.amount.toLocaleString()}
                 </div>
 
                 <div className="flex gap-2">
