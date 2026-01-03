@@ -4,7 +4,7 @@ import { useTrades } from '@/hooks/useTrades';
 import { useTags } from '@/hooks/useTags';
 import { TopNav } from '@/components/layout/TopNav';
 import { Loading } from '@/components/shared/Loading';
-import { calculateYearlyStats, formatCompactCurrency } from '@/lib/utils';
+import { calculateYearlyStats, formatCompactCurrency, formatPrivateAmount } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
@@ -13,6 +13,7 @@ const Dashboard = () => {
   const { data: allTrades = [], isLoading } = useTrades();
   const { data: tags = [], isLoading: tagsLoading } = useTags();
   const currency = useSettingsStore(state => state.settings.currency);
+  const privacyMode = useSettingsStore(state => state.settings.privacyMode);
   const startingBalance = useSettingsStore(state => state.settings.startingBalance || 0);
   
   const currentYear = new Date().getFullYear();
@@ -84,7 +85,7 @@ const Dashboard = () => {
             <div className="col-span-2 card p-3 flex flex-col items-center justify-center">
               <div className="text-xs text-slate-400 mb-1">ACCOUNT VALUE</div>
               <div className={`text-2xl font-black ${accountBalance >= startingBalance ? 'text-emerald-400' : 'text-red-400'}`}>
-                {currency}{accountBalance.toLocaleString()}
+                {formatPrivateAmount(accountBalance, currency, privacyMode)}
               </div>
             </div>
 
@@ -104,7 +105,7 @@ const Dashboard = () => {
                       
                       {/* P&L Amount - Centered */}
                       <div className={`text-center text-base font-black mb-2 ${tag.totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {currency}{tag.totalPL.toLocaleString()}
+                        {formatPrivateAmount(tag.totalPL, currency, privacyMode)}
                       </div>
                       
                       {/* Progress Bar - THICKER and SHORTER */}
@@ -141,22 +142,22 @@ const Dashboard = () => {
             <div className="col-span-2 grid grid-rows-4 gap-2">
               <div className="card p-3 flex flex-col items-center justify-center">
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">AVG WINNER</div>
-                <div className="text-2xl font-black text-emerald-400">{currency}{avgWinner.toLocaleString()}</div>
+                <div className="text-2xl font-black text-emerald-400">{formatPrivateAmount(avgWinner, currency, privacyMode)}</div>
               </div>
               
               <div className="card p-3 flex flex-col items-center justify-center">
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">AVG LOSER</div>
-                <div className="text-2xl font-black text-red-400">{currency}{Math.abs(avgLoser).toLocaleString()}</div>
+                <div className="text-2xl font-black text-red-400">{formatPrivateAmount(Math.abs(avgLoser), currency, privacyMode)}</div>
               </div>
               
               <div className="card p-3 flex flex-col items-center justify-center">
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">BEST</div>
-                <div className="text-2xl font-black text-emerald-400">{currency}{bestTrade.toLocaleString()}</div>
+                <div className="text-2xl font-black text-emerald-400">{formatPrivateAmount(bestTrade, currency, privacyMode)}</div>
               </div>
               
               <div className="card p-3 flex flex-col items-center justify-center">
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">WORST</div>
-                <div className="text-2xl font-black text-red-400">{currency}{Math.abs(worstTrade).toLocaleString()}</div>
+                <div className="text-2xl font-black text-red-400">{formatPrivateAmount(Math.abs(worstTrade), currency, privacyMode)}</div>
               </div>
             </div>
 
@@ -174,7 +175,12 @@ const Dashboard = () => {
                         {chartData.map((entry, i) => (
                           <Cell key={i} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
                         ))}
-                        <LabelList dataKey="pl" position="top" formatter={(v) => v !== 0 ? v.toLocaleString() : ''} style={{ fill: '#e2e8f0', fontSize: 10, fontWeight: 700 }} />
+                        <LabelList 
+                          dataKey="pl" 
+                          position="top" 
+                          formatter={(v) => v !== 0 ? (privacyMode ? '****' : v.toLocaleString()) : ''} 
+                          style={{ fill: '#e2e8f0', fontSize: 10, fontWeight: 700 }} 
+                        />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
