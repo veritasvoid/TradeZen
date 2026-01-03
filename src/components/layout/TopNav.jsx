@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { TrendingUp, LogOut, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useUpdateSetting } from '@/hooks/useSettings';
 
 export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
   const navigate = useNavigate();
@@ -10,6 +11,13 @@ export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
   const signOut = useAuthStore(state => state.signOut);
   const privacyMode = useSettingsStore(state => state.settings.privacyMode);
   const togglePrivacyMode = useSettingsStore(state => state.togglePrivacyMode);
+  const updateSetting = useUpdateSetting();
+
+  const handlePrivacyToggle = () => {
+    const newValue = !privacyMode;
+    togglePrivacyMode(); // Update local state immediately
+    updateSetting.mutate({ key: 'privacyMode', value: newValue }); // Sync to Google Sheets
+  };
 
   const handleSignOut = () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -107,7 +115,7 @@ export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
               
               {/* Privacy Toggle Button */}
               <button
-                onClick={togglePrivacyMode}
+                onClick={handlePrivacyToggle}
                 className={`p-2 rounded-lg transition-all border shadow-lg hover:scale-105 ${
                   privacyMode
                     ? 'bg-gradient-to-br from-purple-600 to-pink-600 border-purple-500/50 shadow-purple-900/50' 
