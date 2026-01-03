@@ -1,12 +1,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { TrendingUp, LogOut } from 'lucide-react';
+import { TrendingUp, LogOut, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const signOut = useAuthStore(state => state.signOut);
+  const privacyMode = useSettingsStore(state => state.settings.privacyMode);
+  const togglePrivacyMode = useSettingsStore(state => state.togglePrivacyMode);
 
   const handleSignOut = () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -101,6 +104,20 @@ export const TopNav = ({ selectedYear, onYearChange, maxYear }) => {
               >
                 Tags
               </button>
+              
+              {/* Privacy Toggle Button */}
+              <button
+                onClick={togglePrivacyMode}
+                className={`p-2 rounded-lg transition-all border shadow-lg hover:scale-105 ${
+                  privacyMode
+                    ? 'bg-gradient-to-br from-purple-600 to-pink-600 border-purple-500/50 shadow-purple-900/50' 
+                    : 'bg-gradient-to-br from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border-slate-700/50'
+                }`}
+                title={privacyMode ? 'Show amounts' : 'Hide amounts'}
+              >
+                {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              
               <button
                 onClick={() => navigate('/settings')}
                 className={`px-4 py-1.5 rounded-lg transition-all text-sm font-semibold border shadow-lg hover:scale-105 ${
