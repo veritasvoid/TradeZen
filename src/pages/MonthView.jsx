@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMonthTrades, useUpdateTrade, useDeleteTrade, useAddTrade } from '@/hooks/useTrades';
 import { useTags } from '@/hooks/useTags';
+import { useSettings } from '@/hooks/useSettings';
 import { TopNav } from '@/components/layout/TopNav';
 import { Edit, Trash2, Plus, X, Camera, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCompactCurrency, generateId, formatPrivateAmount, formatPrivateAmountWithSign } from '@/lib/utils';
@@ -16,6 +17,7 @@ const MonthView = () => {
   
   const { data: trades = [], isLoading } = useMonthTrades(currentYear, currentMonth);
   const { data: tags = [] } = useTags();
+  useSettings(); // Fetch settings from Google Sheets on mount
   const currency = useSettingsStore(state => state.settings.currency);
   const privacyMode = useSettingsStore(state => state.settings.privacyMode);
 
