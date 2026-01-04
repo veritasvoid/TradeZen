@@ -114,7 +114,9 @@ const updateTag = async ({ tagId, updates }) => {
 
 // Delete tag
 const deleteTag = async (tagId) => {
-  const sheetId = localStorage.getItem(STORAGE_KEYS.SHEET_ID);
+  const sheetId = '1ruzm5D-ofifAU7d5oRChBT7DAYFTlVLgULSsXvYEtXU';
+  
+  console.log('🗑️ Deleting tag:', tagId);
   
   // Find row index
   const response = await window.gapi.client.sheets.spreadsheets.values.get({
@@ -129,14 +131,26 @@ const deleteTag = async (tagId) => {
     throw new Error('Tag not found');
   }
 
-  // Delete row
+  console.log('📍 Found tag at row index:', rowIndex);
+
+  // FIX: Get the actual Tags sheet ID (not hardcoded 1)
+  const sheetMetadata = await window.gapi.client.sheets.spreadsheets.get({
+    spreadsheetId: sheetId
+  });
+  
+  const tagsSheet = sheetMetadata.result.sheets.find(s => s.properties.title === SHEETS.TAGS);
+  const tagsSheetId = tagsSheet.properties.sheetId;
+  
+  console.log('📋 Tags sheet ID:', tagsSheetId);
+
+  // Delete row using correct sheetId
   await window.gapi.client.sheets.spreadsheets.batchUpdate({
     spreadsheetId: sheetId,
     resource: {
       requests: [{
         deleteDimension: {
           range: {
-            sheetId: 1, // Tags sheet
+            sheetId: tagsSheetId, // FIXED: Use actual sheet ID
             dimension: 'ROWS',
             startIndex: rowIndex,
             endIndex: rowIndex + 1
@@ -145,6 +159,8 @@ const deleteTag = async (tagId) => {
       }]
     }
   });
+
+  console.log('✅ Tag deleted successfully');
 };
 
 // Reorder tags
